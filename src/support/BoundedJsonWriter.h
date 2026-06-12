@@ -46,6 +46,21 @@ public:
         return true;
     }
 
+    bool beginObjectField(const char* name) {
+        if (name == nullptr || !inObject() || depth_ >= kMaxJsonNestingDepth) {
+            failed_ = true;
+            return false;
+        }
+        const Snapshot snapshot = capture();
+        if (!writeFieldPrefix(name) || !appendByte('{')) {
+            restore(snapshot);
+            return false;
+        }
+        first_[depth_] = true;
+        ++depth_;
+        return true;
+    }
+
     bool endObject() {
         if (depth_ == 0) {
             failed_ = true;

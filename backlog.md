@@ -888,7 +888,14 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: OPERATOR GATE — vendor ArduinoJson 6.21.5
+* [x] Task: OPERATOR GATE — vendor ArduinoJson 6.21.5
+
+  VENDORED 2026-06-12 by the operator (Justin), conveyed in session:
+  `ArduinoJson-v6.21.5.h` (verified `ARDUINOJSON_VERSION "6.21.5"`) and the
+  upstream MIT `LICENSE.txt` placed under `third_party/ArduinoJson/`;
+  release commit `40ee05c0`, header sha256 `47eca798…12e1962`, full
+  metadata recorded in `docs/contracts/UPSTREAM_SOURCES.md` in the same
+  change. Invariant sweep passes over the vendored file.
 
   ## Goal
 

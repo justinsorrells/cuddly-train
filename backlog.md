@@ -323,7 +323,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Define session lifecycle states and the transition table
+* [x] Task: Define session lifecycle states and the transition table
 
   ## Goal
 

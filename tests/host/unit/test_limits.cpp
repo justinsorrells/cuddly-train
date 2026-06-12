@@ -25,6 +25,15 @@ int main() {
     static_assert(limits::kTelemetryJsonBufferBytes >= limits::kBoardTxMaxLineBytes);
     static_assert(limits::kEventJsonBufferBytes >= limits::kBoardTxMaxLineBytes);
     static_assert(limits::kHeartbeatJsonBufferBytes >= limits::kBoardTxMaxLineBytes);
+    static_assert(limits::kResponseEnvelopeReserveBytes > 0);
+    static_assert(limits::kMaxResultPayloadBytes ==
+                  limits::kBoardTxMaxLineBytes - limits::kResponseEnvelopeReserveBytes);
+    static_assert(limits::kMaxResultPayloadBytes < limits::kBoardTxMaxLineBytes);
+    static_assert(limits::kMaxErrorMessageBytes > 0);
+    static_assert(limits::kMaxDoubleLiteralBytes >= 32);
+    static_assert(limits::kMaxIntLiteralBytes >= 16);
+    static_assert(limits::kMaxUInt64LiteralBytes >= 21);
+    static_assert(limits::kMaxJsonNestingDepth > 0);
 
     static_assert(limits::kMaxRegisteredCommands > 0);
     static_assert(limits::kMaxArgsPerCommand > 0);

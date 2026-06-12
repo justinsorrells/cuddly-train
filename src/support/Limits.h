@@ -24,6 +24,17 @@ constexpr std::size_t kTelemetryJsonBufferBytes = kBoardTxMaxLineBytes;
 constexpr std::size_t kEventJsonBufferBytes = kBoardTxMaxLineBytes;
 constexpr std::size_t kHeartbeatJsonBufferBytes = kBoardTxMaxLineBytes;
 
+// ObjectWriter payload is intentionally smaller than the full response line so
+// §16 envelope fields and library-owned board_proc_us always fit.
+constexpr std::size_t kResponseEnvelopeReserveBytes = 512;
+constexpr std::size_t kMaxResultPayloadBytes =
+    kBoardTxMaxLineBytes - kResponseEnvelopeReserveBytes;
+constexpr std::size_t kMaxErrorMessageBytes = 160;
+constexpr std::size_t kMaxDoubleLiteralBytes = 32;
+constexpr std::size_t kMaxIntLiteralBytes = 16;
+constexpr std::size_t kMaxUInt64LiteralBytes = 24;
+constexpr std::size_t kMaxJsonNestingDepth = 8;
+
 // §18: telemetry is pushed at a nominal 50 ms period.
 constexpr std::uint32_t kTelemetryPeriodMs = 50;
 

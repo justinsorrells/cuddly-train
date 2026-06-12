@@ -940,7 +940,7 @@ class Orchestrator:
         self.log_artifact("task.md", task_content)
 
         # 1. Clean worktree check
-        if self.config.get("repo", {}).get("require_clean_worktree", True) and not self.allow_dirty:
+        if self.config.get("repo", {}).get("require_clean_worktree", True) and not self.allow_dirty and not self.dry_run:
             print("Checking worktree state...")
             dirty = git_status_porcelain()
             self.log_artifact("git_status_before.txt", dirty)
@@ -1412,8 +1412,10 @@ class Orchestrator:
             self.log_report(task_title, agent_branch, final_classification, final_reason)
             return final_classification
 
-    def log_report(self, task_summary: str, branch: str, classification: str, reason: str, commit_hash: Optional[str] = None, dry_run: bool = False):
+    def log_report(self, task_summary: str, branch: str, classification: str, reason: str, commit_hash: Optional[str] = None, dry_run: Optional[bool] = None):
         """Builds and logs the final report."""
+        if dry_run is None:
+            dry_run = self.dry_run
         # Write final standard artifacts using the final successful or stopped cycle data
         for filename, content in getattr(self, "final_artifacts", {}).items():
             if content:

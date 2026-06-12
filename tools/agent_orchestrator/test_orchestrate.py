@@ -683,6 +683,30 @@ Intro prose paragraph.
         self.assertIn("**Antigravity Audit Verdict**: NOT_RUN", report_text)
 
     @patch("tools.agent_orchestrator.orchestrate.run_cmd")
+    def test_dry_run_ignores_dirty_worktree_guard(self, mock_run):
+        def side_effect(args, *arg, **kw):
+            if args[:2] == ["git", "status"]:
+                return 0, " M docs/companion/Library_API.md\n", ""
+            return 0, "probe ok", ""
+
+        mock_run.side_effect = side_effect
+        self.orchestrator.agent_runs_parent = Path(self.temp_dir)
+        self.orchestrator.dry_run = True
+        self.orchestrator.allow_dirty = False
+
+        task_file = Path(self.temp_dir) / "task.md"
+        task_file.write_text("# Implement options", encoding="utf-8")
+
+        res = self.orchestrator.execute_task(task_file)
+        self.assertEqual(res, "DRY_RUN_OK")
+
+        report = next(Path(self.temp_dir).rglob("final_report.md"), None)
+        self.assertIsNotNone(report)
+        report_text = report.read_text(encoding="utf-8")
+        self.assertIn("**Dry Run**: True", report_text)
+        self.assertIn("**Auto-Commit Decision**: DRY_RUN (NOT COMMITTED)", report_text)
+
+    @patch("tools.agent_orchestrator.orchestrate.run_cmd")
     def test_invariants_failure_blocks_commit(self, mock_run):
         def side_effect(args, *arg, **kw):
             cmd = args[0]

@@ -444,7 +444,14 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: OPERATOR GATE — review and accept the Library API proposal
+* [x] Task: OPERATOR GATE — review and accept the Library API proposal
+
+  ACCEPTED 2026-06-12 by the operator (Justin), conveyed in session,
+  following a read-only 14-point audit of the document (verdict PASS,
+  12/14 clean; the two minor findings — CommandArgs validity tied to the
+  acquired framer payload, and releaseLine() invalidation semantics — were
+  applied to the document at acceptance). Status line updated to
+  ACCEPTED 2026-06-12 in the same change.
 
   ## Goal
 

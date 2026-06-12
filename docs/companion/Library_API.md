@@ -1,8 +1,9 @@
 # Library API Proposal
 
-Status: **PENDING OPERATOR REVIEW**. This companion document gates Phase 2:
-no `src/api/` header may be written until the operator has reviewed this
-proposal.
+Status: **ACCEPTED 2026-06-12** by the operator (Justin), conveyed in
+session after a 14-point operator-facing audit (PASS; the two audit wording
+findings were applied at acceptance). This document governs Phase 2: every
+`src/api/` header implements the surface proposed here.
 
 Authority: `docs/contracts/V1_Networking_Decisions.md` wins first, then
 `docs/contracts/Teensy_Command_Server_Contract.md`, then
@@ -485,7 +486,11 @@ Registration metadata:
 CommandArgs:
 
 * Any string view or pointer returned from `CommandArgs` is valid only during
-  the current handler invocation.
+  the current handler invocation, and only while the framer's acquired line
+  payload remains acquired; the library releases the line only after
+  validation, dispatch, and the current handler invocation complete.
+* `releaseLine()` invalidates parser state and every `CommandArgs` view into
+  the acquired payload.
 * Handlers must not retain references into the parsed document.
 
 CommandResult and ObjectWriter:

@@ -87,7 +87,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Define fixed limits and integer widths (Limits.h)
+* [x] Task: Define fixed limits and integer widths (Limits.h)
 
   ## Goal
 

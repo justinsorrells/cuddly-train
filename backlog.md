@@ -487,7 +487,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Define the public API value and metadata types
+* [x] Task: Define the public API value and metadata types
 
   ## Goal
 

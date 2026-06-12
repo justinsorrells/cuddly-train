@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace teensy_command_server::core {
+namespace teensy_command_server::support {
 
 // §10.1-§10.2: controller-to-board line limit, including the terminating '\n'.
 constexpr std::size_t kBoardRxMaxLineBytes = 1024;
@@ -54,4 +54,4 @@ using Seq = std::uint64_t;
 // §6.2: contract "int" arguments are signed 32-bit values.
 using ContractInt = std::int32_t;
 
-}  // namespace teensy_command_server::core
+}  // namespace teensy_command_server::support

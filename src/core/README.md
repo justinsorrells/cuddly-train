@@ -7,7 +7,6 @@ Planned files (created by their backlog tasks — see `backlog.md` — not
 pre-created):
 
 ```text
-Limits.h               all compile-time capacities and timing defaults
 Protocol.h             closed wire vocabulary (parsing/validation come later)
 Counters.h             bounded contract §25 counters
 Clock.h, Transport.h   injected time and I/O seams (§24)

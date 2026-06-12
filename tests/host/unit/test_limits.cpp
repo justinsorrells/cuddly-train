@@ -1,4 +1,4 @@
-#include "core/Limits.h"
+#include "support/Limits.h"
 
 #include <cassert>
 #include <cstdio>
@@ -6,7 +6,7 @@
 #include <limits>
 #include <type_traits>
 
-namespace limits = teensy_command_server::core;
+namespace limits = teensy_command_server::support;
 
 int main() {
     static_assert(limits::kBoardRxMaxLineBytes == 1024);

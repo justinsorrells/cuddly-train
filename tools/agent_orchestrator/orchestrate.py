@@ -811,6 +811,11 @@ class Orchestrator:
             if f.startswith("docs/contracts/"):
                 if not task_allows_contracts:
                     return "STOP_CONTRACT_CHANGE"
+            # Vendored third-party source is operator-ingested only (hash-pinned
+            # in docs/contracts/UPSTREAM_SOURCES.md); no task may grant agents
+            # edits under it.
+            if f.startswith("third_party/"):
+                return "STOP_HIGH_RISK_CHANGE (Modified vendored third-party source)"
             if f.startswith(".agents/skills/") or f == "AGENTS.md":
                 if not task_allows_skills:
                     return "STOP_HIGH_RISK_CHANGE (Modified AGENTS.md or skills without permission)"

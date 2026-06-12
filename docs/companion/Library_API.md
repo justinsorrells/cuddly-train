@@ -151,7 +151,7 @@ should reject a command registration that does not supply a complete
 wire, but this library API should not rely on absence.
 
 The registry is fixed capacity. The backing capacities come from
-`src/core/Limits.h`: `kMaxRegisteredCommands` and `kMaxArgsPerCommand`.
+`src/support/Limits.h`: `kMaxRegisteredCommands` and `kMaxArgsPerCommand`.
 Registration fails with `StatusCode::CapacityExceeded` rather than reallocating
 or truncating.
 
@@ -211,6 +211,24 @@ used only inside callbacks. A `false` return means the value could not fit in
 the fixed-capacity outbound buffer; handlers should then return
 `CommandResult::internalError(...)` or a more specific board-side error.
 
+There is exactly one bounded JSON writer implementation in the library:
+`src/support/BoundedJsonWriter.h`, in the neutral dependency layer so both
+the public API and the core engine can use it without an api → core
+dependency. `api::ObjectWriter` wraps or delegates to it,
+and schema generation, command responses, telemetry frames, events, and
+heartbeat acknowledgements use the same primitive. Escaping, compact
+formatting, overflow behavior, and byte accounting are implemented once;
+no phase introduces a second serializer.
+
+`ObjectWriter` does not get the full 8192-byte transmit budget. Its capacity
+is the response budget minus reserved envelope overhead: the response keys,
+`status`, `result`/`error` structure, the library-owned `board_proc_us`,
+escaping headroom, and the terminating newline. The writer either writes
+directly into a response builder that has already reserved that envelope, or
+exposes a fixed maximum application-result capacity derived from it. Either
+way, a handler can never successfully produce a result that the library
+cannot wrap into a valid response line (§10.3, §11.2).
+
 Handlers must not add `board_proc_us`. The library owns that field and
 overwrites any attempted handler-provided value before serialization.
 
@@ -248,7 +266,12 @@ A successful handler writes zero or more fields to `result` and returns
 `result` object and inserts `board_proc_us` inside the same object.
 
 A failed handler returns `CommandResult::error(...)` or one of the named
-helpers. The library serializes `status:"error"`, `result:null`, and the
+helpers. There are intentionally five named helpers for six §17 codes:
+`UNKNOWN_COMMAND` is emitted only by the library dispatcher when no
+registered command matches — a command that reaches a handler is by
+definition known, so no handler helper exists for it (a handler could still
+construct it through the generic `error(...)` factory, but should not).
+The library serializes `status:"error"`, `result:null`, and the
 contract §17 error object. Command handlers must not throw exceptions across
 this boundary; Phase 2 implementation should compile without relying on
 exceptions.
@@ -411,11 +434,89 @@ Required behavior:
   `setControllerLossHook(...)` fail on null callback.
 * `start()` fails if identity, network config, telemetry provider, e-stop hook,
   or controller-loss hook is missing.
-* `start()` seals all registration regardless of later session reconnects.
+* `start()` owns the validate-then-seal sequence through three explicit
+  operations — the registry never depends on the schema builder:
+
+  ```cpp
+  Status CommandRegistry::validateMetadataForSeal() const;
+
+  Status SchemaBuilder::validateMaximumSchemaSize(
+      const CommandRegistry& registry,
+      const BoardIdentity& identity);
+
+  void CommandRegistry::commitSeal();
+  ```
+
+  1. The registry accepts and validates registration metadata while MUTABLE.
+  2. `start()` calls `registry.validateMetadataForSeal()` (const,
+     non-mutating completeness check).
+  3. `start()` calls `SchemaBuilder::validateMaximumSchemaSize(...)`
+     (const, non-mutating; the builder reads the registry, never the
+     reverse).
+  4. If either validation fails (e.g. the schema cannot fit the 8192-byte
+     line), `start()` returns failure and the registry remains MUTABLE.
+  5. If both succeed, `start()` calls `registry.commitSeal()` — the atomic
+     transition to SEALED; no registration may occur afterward, regardless
+     of later session reconnects (`RegistrationSealed`). Only the
+     startup/facade path calls `commitSeal()`.
+  6. Runtime schema serialization still checks the final encoded length,
+     including the terminating newline.
+
+  An oversized schema never leaves the registry sealed, and neither
+  implementation agent redesigns this sequence independently.
 
 The schema transmitted after each accepted controller connection is generated
 from the same registered `CommandSpec` and field schemas used for dispatch.
 There is no separate manually maintained schema table.
+
+## Ownership and Lifetimes
+
+Every pointer crossing the API boundary has a pinned owner and lifetime.
+
+Registration metadata:
+
+* The registry copies board IDs, firmware versions, command names, argument
+  names, field names, and every other registration string into library-owned,
+  fixed-capacity storage at registration time.
+* Registration must not retain pointers to caller-owned temporary or
+  stack-local data. After a registration call returns, the caller's buffers
+  may be reused or destroyed without affecting the registry.
+
+CommandArgs:
+
+* Any string view or pointer returned from `CommandArgs` is valid only during
+  the current handler invocation.
+* Handlers must not retain references into the parsed document.
+
+CommandResult and ObjectWriter:
+
+* Result data written through `ObjectWriter` and error messages carried by
+  `CommandResult` are copied into bounded library-owned storage before the
+  handler returns, unless the API explicitly documents a static-lifetime
+  string requirement for a specific parameter.
+* No handler-returned pointer is dereferenced after the handler returns.
+
+Callback context:
+
+* The board application owns every `void* context` passed at registration and
+  must keep it alive from registration until server shutdown. The library
+  never frees, copies, or interprets it.
+
+Dependency direction (enforced by `tools/check_invariants.py`):
+
+```text
+src/support   may depend only on the C++ standard library
+src/api       may depend on src/support
+src/core      may depend on src/api and src/support
+src/platform  may depend on src/api, src/core, and src/support
+```
+
+* `src/support` is the neutral dependency layer: `Limits.h` (all
+  compile-time capacities) and `BoundedJsonWriter.h` live there.
+* `CommandRegistry` lives in `src/core/CommandRegistry.h`.
+* `src/api` must not depend on `CommandRegistry`, session state, transport,
+  QNEthernet, or any other implementation object. The public headers are
+  data, callback typedefs, and the facade declaration only.
 
 ## One-To-One Contract Mapping
 

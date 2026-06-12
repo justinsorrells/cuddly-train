@@ -317,6 +317,19 @@ max_limit = 100
         )
         self.assertNotEqual(res_allowed, "STOP_CONTRACT_CHANGE")
 
+    def test_forbidden_patterns_third_party_file(self):
+        diff = "tweak vendored header"
+        changed_files = ["third_party/ArduinoJson/ArduinoJson-v6.21.5.h"]
+        res = self.orchestrator.check_forbidden_patterns(diff, changed_files, "ordinary task description")
+        self.assertEqual(res, "STOP_HIGH_RISK_CHANGE (Modified vendored third-party source)")
+
+        # No permission keyword exists for third_party; even contract-edit
+        # grants do not extend to vendored source.
+        res_still_blocked = self.orchestrator.check_forbidden_patterns(
+            diff, changed_files, "allow editing contracts and modify skills"
+        )
+        self.assertEqual(res_still_blocked, "STOP_HIGH_RISK_CHANGE (Modified vendored third-party source)")
+
     def test_forbidden_patterns_skills_file(self):
         diff = "edit skills"
         changed_files = [".agents/skills/teensy-safety-hooks/SKILL.md"]

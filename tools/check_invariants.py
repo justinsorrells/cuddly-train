@@ -43,6 +43,17 @@ PLATFORM_ALLOWED_DIRS = ("src/platform/qnethernet", "sketches")
 def in_allowed_platform_dirs(rpath: str) -> bool:
     return any(rpath == d or rpath.startswith(d + "/") for d in PLATFORM_ALLOWED_DIRS)
 
+# Layered include direction (Library_API.md, Dependency Direction):
+#   src/support -> std only; src/api -> support; src/core -> api, support;
+#   src/platform -> api, core, support. Maps each layer to the path segments
+# it must never include. Quoted project includes only; <std> headers pass.
+LAYER_FORBIDDEN_INCLUDES = {
+    "src/support": ("api/", "core/", "platform/"),
+    "src/api": ("core/", "platform/"),
+    "src/core": ("platform/",),
+}
+QUOTED_INCLUDE = re.compile(r'#include\s*"([^"]+)"')
+
 # Board-side forbidden vocabulary (contract §17, §16.4, §30).
 CONTROLLER_OWNED_CODES = re.compile(
     r"BOARD_UNAVAILABLE|BOARD_BUSY|COMMAND_TIMEOUT|CONTROLLER_SHUTDOWN"
@@ -82,10 +93,21 @@ def check_file(path: Path) -> None:
         return
 
     in_src = rpath.startswith("src/")
-    in_core_or_api = rpath.startswith(("src/core", "src/api"))
+    in_core_or_api = rpath.startswith(("src/core", "src/api", "src/support"))
+    layer = next((d for d in LAYER_FORBIDDEN_INCLUDES if rpath.startswith(d + "/")), None)
 
     for lineno, line in enumerate(text.splitlines(), 1):
         where = f"{rpath}:{lineno}"
+        if layer:
+            include = QUOTED_INCLUDE.search(line)
+            if include:
+                target = include.group(1)
+                for segment in LAYER_FORBIDDEN_INCLUDES[layer]:
+                    if re.search(r"(?:^|/)" + re.escape(segment), target):
+                        ERRORS.append(
+                            f"{where}: {layer} must not include {segment[:-1]} headers "
+                            "(dependency direction, Library_API.md)"
+                        )
         if re.search(r'^#line\s+\d+\s+"', line):
             ERRORS.append(f"{where}: generated Arduino #line directive in committed source")
         if re.search(r'"(/Users/|/home/|[A-Za-z]:\\\\)', line):

@@ -149,7 +149,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Define the protocol vocabulary (Protocol.h)
+* [x] Task: Define the protocol vocabulary (Protocol.h)
 
   ## Goal
 

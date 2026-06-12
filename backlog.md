@@ -213,7 +213,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Define bounded counters (Counters.h)
+* [x] Task: Define bounded counters (Counters.h)
 
   ## Goal
 

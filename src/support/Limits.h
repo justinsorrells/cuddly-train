@@ -59,6 +59,16 @@ constexpr std::size_t kMaxRegisteredCommands = 16;
 // §6.2, §14: V1 args are small and flat; full schema must fit 8192 bytes.
 constexpr std::size_t kMaxArgsPerCommand = 8;
 
+// §3, §6.1, §14: registration metadata is copied into fixed-capacity storage.
+constexpr std::size_t kMaxBoardIdBytes = 48;
+constexpr std::size_t kMaxProtocolVersionBytes = 8;
+constexpr std::size_t kMaxFirmwareVersionBytes = 32;
+constexpr std::size_t kMaxCommandNameBytes = 48;
+constexpr std::size_t kMaxArgNameBytes = 48;
+constexpr std::size_t kMaxFieldNameBytes = 48;
+constexpr std::size_t kMaxTelemetryFields = 24;
+constexpr std::size_t kMaxStateFields = 24;
+
 // §15, §16.1, §18.3: all protocol seq values use uint64_t.
 using Seq = std::uint64_t;
 

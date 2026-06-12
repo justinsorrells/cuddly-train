@@ -549,7 +549,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Define the handler boundary types (results, writers, hooks)
+* [x] Task: Define the handler boundary types (results, writers, hooks)
 
   ## Goal
 

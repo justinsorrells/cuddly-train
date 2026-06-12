@@ -373,7 +373,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Draft the Library API companion document
+* [x] Task: Draft the Library API companion document
 
   ## Goal
 

@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    name: contract + invariant checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/check_contract_sync.py
+      - run: python3 tools/check_invariants.py
+      - run: python3 -m unittest tools.agent_orchestrator.test_orchestrate -v
+
+  host-tests:
+    name: host C++ tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./tools/run_host_tests.sh
+
+  teensy-compile:
+    name: Teensy 4.1 compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Passes trivially until sketches exist (build_teensy.sh no-ops).
+      # When the first sketch lands (backlog Phase 9), enable the setup steps
+      # below and pin library versions per docs/companion/Build_and_Flash_Guide.md:
+      #
+      # - uses: arduino/setup-arduino-cli@v2
+      # - run: arduino-cli core install teensy:avr
+      #        --additional-urls https://www.pjrc.com/teensy/package_teensy_index.json
+      # - run: arduino-cli lib install QNEthernet ArduinoJson
+      - run: ./tools/build_teensy.sh
+
+  # Hardware/conformance tests are manual-only (tests/hardware/, tools/run_conformance.sh).
+  # They are never run or simulated in hosted CI — see AGENTS.md.

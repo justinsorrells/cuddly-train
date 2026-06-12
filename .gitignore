@@ -1,0 +1,35 @@
+# Build artifacts
+build/
+.pio/
+*.elf
+*.hex
+*.bin
+*.o
+*.a
+*.d
+*.eep
+*.lst
+*.sym
+
+# Arduino / arduino-cli caches and generated output
+.arduino15/
+arduino-cache/
+*.ino.cpp
+
+# Host test binaries
+tests/host/**/*.out
+tests/host/bin/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Agent orchestrator run artifacts
+.agent_runs/
+tools/agent_orchestrator/scratch_task.md
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/

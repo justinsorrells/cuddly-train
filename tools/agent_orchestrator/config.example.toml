@@ -1,0 +1,52 @@
+[agents.codex]
+command = "codex"
+mode = "exec"
+model = "gpt-5.5"
+
+[agents.claude]
+command = "claude"
+mode = "print"
+model = "opus"
+
+[agents.antigravity]
+command = "agy"
+model = "gemini-3.5-flash"
+
+[repo]
+main_branch = "main"
+agent_branch_prefix = "agent/"
+require_clean_worktree = true
+never_auto_push = true
+never_auto_merge = true
+
+[checks]
+contract_sync = true
+invariants = true
+host_tests = true
+teensy_build = true
+compileall = true
+
+[limits]
+max_changed_files = 30
+max_diff_lines = 2500
+max_task_cycles = 5
+subprocess_timeout_s = 1800
+
+[review]
+allow_claude_override_antigravity = true
+antigravity_hard_stop_categories = [
+  "contract_violation",
+  "safety_or_estop_issue",
+  "board_status_violation",
+  "core_platform_boundary_violation",
+  "fixed_capacity_violation",
+  "seq_or_controller_ts_confusion",
+  "transmit_path_issue",
+  "telemetry_liveness_issue",
+  "schema_drift",
+  "unbounded_queue_or_blocking",
+  "test_failure",
+  "invariant_failure",
+  "frozen_contract_modified",
+  "security_or_secret_exposure"
+]

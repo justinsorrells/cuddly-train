@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 tools/check_invariants.py)",
+      "Bash(python3 tools/check_contract_sync.py)",
+      "Bash(./tools/run_host_tests.sh)",
+      "Bash(./tools/build_teensy.sh)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
+    "deny": []
+  }
+}

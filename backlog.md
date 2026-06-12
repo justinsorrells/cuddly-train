@@ -264,7 +264,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Define core time and transport seams with host fakes
+* [x] Task: Define core time and transport seams with host fakes
 
   ## Goal
 

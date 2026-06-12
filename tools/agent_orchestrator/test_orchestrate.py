@@ -16,6 +16,7 @@ from tools.agent_orchestrator.orchestrate import (
     Orchestrator,
     command_blocked_by_never_auto_policy,
     extract_added_lines,
+    extract_first_backlog_task,
     git_commit,
     last_anchored_match,
     parse_changed_files,
@@ -615,37 +616,45 @@ diff --git a/src/core/Protocol.cpp b/src/core/Protocol.cpp
     - Sub-bullet
 * [ ] Task: Next Task
 """
-        backlog_file = Path(self.temp_dir) / "backlog.md"
-        backlog_file.write_text(backlog_content, encoding="utf-8")
-        
-        import re
-        task_pattern = re.compile(r"^\s*[-\*]\s*\[\s*\]\s+(.*)$", re.MULTILINE)
-        matches = list(task_pattern.finditer(backlog_content))
-        self.assertEqual(len(matches), 2)
-        match = matches[0]
-        
-        task_start = match.start()
-        remaining_text = backlog_content[task_start:]
-        lines = remaining_text.splitlines()
-        
-        task_lines = [lines[0]]
-        for line in lines[1:]:
-            is_checkbox = re.match(r"^\s*[-\*]\s*\[\s*[xX ]\s*\]", line)
-            is_top_level_heading = re.match(r"^#\s+", line)
-            is_hr = re.match(r"^---", line)
-            if is_checkbox or is_top_level_heading or is_hr:
-                break
-            task_lines.append(line)
-        
-        task_lines[0] = f"# {match.group(1).strip()}"
-        full_scratch_content = "\n".join(task_lines)
-        
+        extracted = extract_first_backlog_task(backlog_content)
+        self.assertIsNotNone(extracted)
+        title, full_scratch_content = extracted
+        self.assertEqual(title, "Task: Seed optional Rx path heartbeat")
         self.assertIn("# Task: Seed optional Rx path heartbeat", full_scratch_content)
         self.assertIn("## Goal", full_scratch_content)
         self.assertIn("- Bullet 1", full_scratch_content)
         self.assertIn("- Bullet 2", full_scratch_content)
         self.assertIn("- Sub-bullet", full_scratch_content)
         self.assertNotIn("Next Task", full_scratch_content)
+
+    def test_backlog_extraction_with_blank_line_before_checkbox(self):
+        # Regression: with re.MULTILINE, a leading \s* in the task regex
+        # consumed the newline of a preceding blank line, anchoring the match
+        # on the blank line and producing a title-only task body. Blank lines
+        # before checkboxes are normal markdown (backlog.md uses them).
+        backlog_content = """# Phase backlog
+
+Intro prose paragraph.
+
+- [ ] Task: First real task
+  Contract sections: section 1.
+  Acceptance criteria: criteria text.
+  Tests: test text.
+
+- [ ] Task: Second task
+  Body of second task.
+"""
+        extracted = extract_first_backlog_task(backlog_content)
+        self.assertIsNotNone(extracted)
+        title, body = extracted
+        self.assertEqual(title, "Task: First real task")
+        self.assertIn("# Task: First real task", body)
+        self.assertIn("Contract sections: section 1.", body)
+        self.assertIn("Acceptance criteria: criteria text.", body)
+        self.assertIn("Tests: test text.", body)
+        self.assertNotIn("Second task", body)
+
+        self.assertIsNone(extract_first_backlog_task("# Backlog\n- [x] done\n"))
 
     @patch("tools.agent_orchestrator.orchestrate.run_cmd")
     def test_dry_run_exits_dry_run_ok(self, mock_run):

@@ -1,4 +1,5 @@
-# Library API (companion — to be written in Phase 1)
+# Library API (companion — produced by its backlog task; operator review of
+this document gates all `src/api/` work)
 
 Documents the exact public C++ surface (`src/TeensyCommandServer.h`,
 `src/api/*`) and its one-to-one mapping to the contract §5 operations:

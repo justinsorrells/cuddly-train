@@ -58,13 +58,19 @@ python3 tools/agent_orchestrator/orchestrate.py --task-file tools/agent_orchestr
 # Single task
 python3 tools/agent_orchestrator/orchestrate.py --task-file path/to/task.md
 
-# Backlog mode: runs the first unchecked `- [ ]` item, checks it off on success
+# Backlog mode: runs the first unchecked `* [ ]` task, checks it off on success
 python3 tools/agent_orchestrator/orchestrate.py --backlog backlog.md
 ```
 
-Note on backlog mode: `backlog.md` Phase 0 contains owner-only items; point the
-orchestrator at a curated task file or a phase-scoped backlog slice rather than
-the raw Phase 0 section.
+`backlog.md` is the authoritative agent task ledger (same pattern as
+special-lamp): ordered `* [ ] Task:` entries with Goal/Scope/Do-not/Tests/
+Validation bodies, completed strictly in order and checked off by the
+orchestrator. Operator gates live in its preamble as prose, or as ledger
+entries only when they must block execution: an unchecked OPERATOR GATE
+entry instructs any agent that picks it up to make no changes (halting the
+run as STOP_BACKLOG_EMPTY without committing); once the operator completes
+and checks it, it remains as a historical record. Backlog mode executes only
+the first unchecked `* [ ] Task:` entry.
 
 ---
 

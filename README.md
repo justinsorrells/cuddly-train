@@ -44,6 +44,7 @@ python3 tools/check_contract_sync.py  # contracts match pinned hashes
 
 ## Status
 
-Bootstrap (Phase 0 of `backlog.md`). The contract awaits owner ratification;
-its four numeric timing defaults are provisional pending hardware conformance
-(contract §31). No command-server behavior is implemented yet.
+Contract RATIFIED FOR IMPLEMENTATION (2026-06-12); its four numeric timing
+defaults remain provisional pending hardware conformance, and FROZEN waits on
+Phase-10 hardware results (contract §31). `backlog.md` is the authoritative
+agent task ledger. No command-server behavior is implemented yet.

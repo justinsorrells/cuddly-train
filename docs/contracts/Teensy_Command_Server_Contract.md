@@ -1,7 +1,13 @@
-# Teensy 4.1 Command Server Contract (v1 PROPOSED)
+# Teensy 4.1 Command Server Contract (v1 RATIFIED)
 
-**Status:** Proposed V1 normative companion contract — not frozen. Ratify via
-backlog before firmware work begins.
+**Status:** RATIFIED FOR IMPLEMENTATION (operator: Justin Sorrells,
+2026-06-12; ratification recorded in `backlog.md`). The §31 judgment calls
+are accepted. **Not yet FROZEN:** the four numeric timing defaults (100 ms
+e-stop and controller-loss hook budgets, 100 ms transmit deadline, 10
+consecutive telemetry deadline failures) remain provisional pending Phase-10
+hardware conformance (§31) — hardware findings may adjust values and their
+associated tests, never architecture. FROZEN is stamped after operator review
+of the recorded hardware results.
 **Target:** Teensy 4.1 using QNEthernet.
 **Authority:** `V1_Networking_Decisions.md` (v3 FROZEN) remains authoritative
 wherever this document conflicts with it. `Board_Developer_Guide.md` (v2

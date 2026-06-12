@@ -532,6 +532,39 @@ def git_diff_stat() -> str:
     _, out, _ = run_cmd(["git", "diff", "--stat"])
     return out
 
+BACKLOG_TASK_RE = re.compile(r"^[ \t]*[-\*][ \t]*\[[ \t]*\][ \t]+(.*)$", re.MULTILINE)
+
+
+def extract_first_backlog_task(backlog_content: str) -> Optional[Tuple[str, str]]:
+    r"""Return (task_line_text, scratch_markdown) for the first unchecked task.
+
+    Whitespace classes are [ \t] (not \s): with re.MULTILINE, ``^\s*`` can
+    consume the newline of a preceding blank line, which made the match start
+    on the blank line and the body loop break immediately on the checkbox
+    line itself — yielding a title-only task whenever a blank line preceded
+    a checkbox.
+    """
+    matches = list(BACKLOG_TASK_RE.finditer(backlog_content))
+    if not matches:
+        return None
+    match = matches[0]
+    task_line_text = match.group(1).strip()
+
+    remaining_text = backlog_content[match.start():]
+    lines = remaining_text.splitlines()
+    task_lines = [lines[0]]
+    for line in lines[1:]:
+        is_checkbox = re.match(r"^\s*[-\*]\s*\[\s*[xX ]\s*\]", line)
+        is_top_level_heading = re.match(r"^#\s+", line)
+        is_hr = re.match(r"^---", line)
+        if is_checkbox or is_top_level_heading or is_hr:
+            break
+        task_lines.append(line)
+
+    task_lines[0] = f"# {task_line_text}"
+    return task_line_text, "\n".join(task_lines)
+
+
 def slugify(text: str) -> str:
     # Convert spaces/special chars to hyphens
     text = text.lower()
@@ -1498,34 +1531,11 @@ def main():
         # Simple backlog parser: find lines matching `- [ ]` or `* [ ]`
         backlog_content = backlog_path.read_text(encoding="utf-8")
         
-        # Regex to find tasks of style `- [ ] Task: ...` or `* [ ] Task: ...`
-        task_pattern = re.compile(r"^\s*[-\*]\s*\[\s*\]\s+(.*)$", re.MULTILINE)
-        matches = list(task_pattern.finditer(backlog_content))
-        
-        if not matches:
+        extracted = extract_first_backlog_task(backlog_content)
+        if extracted is None:
             print("No pending tasks found in backlog. Stop.")
             sys.exit(0)
-
-        # Process the first task found
-        match = matches[0]
-        task_line_text = match.group(1).strip()
-        
-        # Extract task details until next top-level checkbox or heading
-        task_start = match.start()
-        remaining_text = backlog_content[task_start:]
-        lines = remaining_text.splitlines()
-        
-        task_lines = [lines[0]]
-        for line in lines[1:]:
-            is_checkbox = re.match(r"^\s*[-\*]\s*\[\s*[xX ]\s*\]", line)
-            is_top_level_heading = re.match(r"^#\s+", line)
-            is_hr = re.match(r"^---", line)
-            if is_checkbox or is_top_level_heading or is_hr:
-                break
-            task_lines.append(line)
-            
-        task_lines[0] = f"# {task_line_text}"
-        full_scratch_content = "\n".join(task_lines)
+        task_line_text, full_scratch_content = extracted
         
         # Create a temporary task file for execution
         temp_task_file = Path("tools/agent_orchestrator/scratch_task.md")
@@ -1536,11 +1546,6 @@ def main():
             classification = orchestrator.execute_task(temp_task_file)
             if classification == "AUTO_COMMITTED":
                 # Mark as checked in the backlog file
-                start, end = match.span()
-                # Find the checkbox position
-                checkbox_match = re.search(r"([-\*])\s*\[\s*\]", backlog_content[start-10:end]) # lookback a bit
-                
-                # Slices of content
                 lines = backlog_content.splitlines()
                 for idx, line in enumerate(lines):
                     stripped = line.strip()

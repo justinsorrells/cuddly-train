@@ -3,7 +3,9 @@
 Platform-free. No QNEthernet/Arduino networking includes (invariant-checked).
 This plus `src/TeensyCommandServer.h` is the entire public surface.
 
-Planned files (created by backlog Phase 1, not pre-created):
+Planned files (created by their backlog tasks — see `backlog.md` — and only
+after the operator has reviewed `docs/companion/Library_API.md`; not
+pre-created):
 
 ```text
 BoardRegistry.h       identity + command/telemetry/state registration

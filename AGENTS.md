@@ -19,11 +19,11 @@ contract; they do not reinterpret it.
 If two documents conflict, **stop and report the contradiction**. Never
 silently choose an interpretation.
 
-Contract status: the Teensy contract is awaiting owner ratification, and its
-four numeric timing defaults (100 ms hook budgets, 100 ms transmit deadline,
-10-frame telemetry teardown) are provisional pending hardware conformance
-(contract §31). Hardware testing may change the numbers, never the
-architecture.
+Contract status: the Teensy contract is RATIFIED FOR IMPLEMENTATION
+(2026-06-12, recorded in `backlog.md`) but not yet FROZEN: its four numeric
+timing defaults (100 ms hook budgets, 100 ms transmit deadline, 10-frame
+telemetry teardown) are provisional pending hardware conformance (contract
+§31). Hardware testing may change the numbers, never the architecture.
 
 ## Repository boundaries (hard invariants)
 

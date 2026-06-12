@@ -8,7 +8,8 @@ before changing code.
 1. `docs/contracts/V1_Networking_Decisions.md` — **frozen** controller
    contract. It wins on any conflict.
 2. `docs/contracts/Teensy_Command_Server_Contract.md` — this repo's contract
-   (pending owner ratification; numeric timing defaults provisional).
+   (RATIFIED FOR IMPLEMENTATION; numeric timing defaults provisional until
+   hardware validation, §31).
 3. `docs/contracts/Board_Developer_Guide.md` — board-developer-facing rules.
 4. `docs/companion/*` — developer guides (API, build/flash, conformance, timing).
 5. `AGENTS.md` — boundaries, skills-by-task, commands, completion report.

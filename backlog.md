@@ -648,7 +648,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Implement the fixed-capacity command registry
+* [x] Task: Implement the fixed-capacity command registry
 
   ## Goal
 

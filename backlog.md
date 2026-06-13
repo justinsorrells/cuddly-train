@@ -1175,7 +1175,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Define the network/server seam and fake (Phase 4)
+* [x] Task: Define the network/server seam and fake (Phase 4)
 
   ## Goal
 

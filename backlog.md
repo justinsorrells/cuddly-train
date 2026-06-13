@@ -935,7 +935,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Parse inbound messages with fixed-capacity JSON
+* [x] Task: Parse inbound messages with fixed-capacity JSON
 
   ## Goal
 

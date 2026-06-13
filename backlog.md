@@ -729,7 +729,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Generate the schema message from the registry
+* [x] Task: Generate the schema message from the registry
 
   ## Goal
 

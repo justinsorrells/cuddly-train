@@ -1276,7 +1276,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Implement the serialized outbound transmit path (Phase 5)
+* [x] Task: Implement the serialized outbound transmit path (Phase 5)
 
   ## Goal
 

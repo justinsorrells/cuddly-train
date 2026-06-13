@@ -4,7 +4,7 @@ Date: 2026-06-13
 Status: ledgered
 
 (Filename retains the original `4-14` slug; the plan now spans Phases 4–18
-after nine external audit rounds added a network seam, API-extension and
+after ten external audit rounds added a network seam, API-extension and
 dependency-pin gates, a conformance fixture, actual-controller demo
 integration, and full hardware freeze gates. Status is ledgered; the entries
 have been appended to `backlog.md`.)

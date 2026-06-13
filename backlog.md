@@ -809,7 +809,7 @@ Operator gates (not agent tasks; tracked here for visibility):
 
 ---
 
-* [ ] Task: Implement the bounded NDJSON line framer
+* [x] Task: Implement the bounded NDJSON line framer
 
   ## Goal
 

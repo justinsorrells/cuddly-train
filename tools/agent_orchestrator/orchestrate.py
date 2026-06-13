@@ -1208,6 +1208,7 @@ class Orchestrator:
             anti_cmd = [
                 anti_cfg["command"],
                 "--print",
+                "-",
                 "--print-timeout",
                 ANTIGRAVITY_PRINT_TIMEOUT,
                 "--model",

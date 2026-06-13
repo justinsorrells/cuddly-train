@@ -29,6 +29,7 @@ public:
     static api::Status validateMaximumSchemaSize(const CommandRegistry& registry,
                                                  const api::BoardIdentity& identity) {
         char buffer[support::kSchemaJsonBufferBytes]{};
+        // Contract section 14: reserve the widest possible board-local timestamp.
         return buildSchemaLineWithTimestamp(registry, identity,
                                             std::numeric_limits<std::uint64_t>::max(), buffer,
                                             sizeof(buffer));
@@ -49,10 +50,10 @@ private:
 
         if (!writer.beginObject() ||
             !writer.addString(field::kType, toString(MessageType::Schema)) ||
-            !writer.addUInt64(field::kSeq, 1) ||
+            !writer.addUInt64(field::kSeq, kSchemaSeq) ||
             !writer.addUInt64(field::kTimestamp, timestamp) ||
             !writer.addString(field::kSource, identity.board_id) ||
-            !writer.addString(field::kTarget, "controller") ||
+            !writer.addString(field::kTarget, kControllerTarget) ||
             !writer.addString(field::kProtocolVersion, identity.protocol_version) ||
             !writeSchemaObject(writer, registry, identity) ||
             !writer.endObject()) {
@@ -153,6 +154,9 @@ private:
     static api::Status status(api::StatusCode code, const char* message) {
         return {code, message};
     }
+
+    static constexpr std::uint64_t kSchemaSeq = 1;
+    static constexpr const char* kControllerTarget = "controller";
 };
 
 }  // namespace teensy_command_server::core

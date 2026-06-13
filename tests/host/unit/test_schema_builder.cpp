@@ -32,6 +32,28 @@ void assertBufferEquals(const char* buffer, std::size_t length, const char* expe
     assert(std::memcmp(buffer, expected, length) == 0);
 }
 
+void fillString(char* out, std::size_t length, char ch) {
+    for (std::size_t i = 0; i < length; ++i) {
+        out[i] = ch;
+    }
+    out[length] = '\0';
+}
+
+void fillIndexedName(char* out,
+                     std::size_t capacity,
+                     const char* prefix,
+                     std::size_t index,
+                     char fill) {
+    const int prefix_length = std::snprintf(out, capacity + 1, "%s%02zu_", prefix, index);
+    assert(prefix_length > 0);
+    std::size_t used = static_cast<std::size_t>(prefix_length);
+    assert(used <= capacity);
+    while (used < capacity) {
+        out[used++] = fill;
+    }
+    out[capacity] = '\0';
+}
+
 core::CommandRegistry smallRegistry() {
     core::CommandRegistry registry;
     const api::ArgumentSpec speed_args[] = {
@@ -46,6 +68,46 @@ core::CommandRegistry smallRegistry() {
     assertOk(registry.registerStateField({"mode", api::ValueType::String}));
     assertOk(registry.registerStateField({"faulted", api::ValueType::Bool}));
     return registry;
+}
+
+core::CommandRegistry generatedMaxWidthRegistry(std::size_t command_count,
+                                                std::size_t telemetry_count,
+                                                std::size_t state_count) {
+    core::CommandRegistry registry;
+
+    for (std::size_t command_index = 0; command_index < command_count; ++command_index) {
+        char command_name[limits::kMaxCommandNameBytes + 1]{};
+        char arg_names[limits::kMaxArgsPerCommand][limits::kMaxArgNameBytes + 1]{};
+        api::ArgumentSpec args[limits::kMaxArgsPerCommand]{};
+        fillIndexedName(command_name, limits::kMaxCommandNameBytes, "cmd", command_index, 'c');
+        for (std::size_t arg_index = 0; arg_index < limits::kMaxArgsPerCommand; ++arg_index) {
+            fillIndexedName(arg_names[arg_index], limits::kMaxArgNameBytes, "arg", arg_index,
+                            'a');
+            args[arg_index] = {arg_names[arg_index], api::ValueType::String};
+        }
+        assertOk(registry.registerCommand(
+            commandRegistration(command_name, args, limits::kMaxArgsPerCommand, true)));
+    }
+
+    for (std::size_t i = 0; i < telemetry_count; ++i) {
+        char field_name[limits::kMaxFieldNameBytes + 1]{};
+        fillIndexedName(field_name, limits::kMaxFieldNameBytes, "tel", i, 't');
+        assertOk(registry.registerTelemetryField({field_name, api::ValueType::Float}));
+    }
+
+    for (std::size_t i = 0; i < state_count; ++i) {
+        char field_name[limits::kMaxFieldNameBytes + 1]{};
+        fillIndexedName(field_name, limits::kMaxFieldNameBytes, "sta", i, 's');
+        assertOk(registry.registerStateField({field_name, api::ValueType::Bool}));
+    }
+
+    return registry;
+}
+
+api::BoardIdentity maxWidthIdentity(char* board_id, char* firmware_version) {
+    fillString(board_id, limits::kMaxBoardIdBytes, 'b');
+    fillString(firmware_version, limits::kMaxFirmwareVersionBytes, 'f');
+    return {board_id, "1", firmware_version};
 }
 
 void goldenSchemaUsesContractShapeAndOrder() {
@@ -93,19 +155,6 @@ void exactRuntimeCapacityIsAcceptedAndOneByteShortIsRejected() {
                .code == api::StatusCode::CapacityExceeded);
 }
 
-void constructedOversizedSchemaIsRejected() {
-    core::CommandRegistry registry = smallRegistry();
-    char huge_firmware[limits::kBoardTxMaxLineBytes]{};
-    for (std::size_t i = 0; i < sizeof(huge_firmware) - 1; ++i) {
-        huge_firmware[i] = 'f';
-    }
-    huge_firmware[sizeof(huge_firmware) - 1] = '\0';
-
-    assert(core::SchemaBuilder::validateMaximumSchemaSize(
-               registry, {"board", "1", huge_firmware})
-               .code == api::StatusCode::CapacityExceeded);
-}
-
 class MaxClock final : public core::Clock {
 public:
     std::uint64_t monotonicMilliseconds() const override {
@@ -116,6 +165,34 @@ public:
         return std::numeric_limits<std::uint64_t>::max();
     }
 };
+
+void validLargeSchemaFitsTransmitLimit() {
+    core::CommandRegistry registry = generatedMaxWidthRegistry(9, 24, 24);
+    char board_id[limits::kMaxBoardIdBytes + 1]{};
+    char firmware_version[limits::kMaxFirmwareVersionBytes + 1]{};
+    const api::BoardIdentity identity = maxWidthIdentity(board_id, firmware_version);
+
+    assertOk(core::SchemaBuilder::validateMaximumSchemaSize(registry, identity));
+
+    MaxClock clock;
+    char buffer[limits::kSchemaJsonBufferBytes]{};
+    assertOk(core::SchemaBuilder::buildSchemaLine(registry, identity, clock, buffer,
+                                                  sizeof(buffer)));
+    const std::size_t size = std::strlen(buffer);
+    assert(size > 8100);
+    assert(size <= limits::kBoardTxMaxLineBytes);
+    assert(buffer[size - 1] == '\n');
+}
+
+void validOversizedSchemaIsRejected() {
+    core::CommandRegistry registry = generatedMaxWidthRegistry(10, 16, 23);
+    char board_id[limits::kMaxBoardIdBytes + 1]{};
+    char firmware_version[limits::kMaxFirmwareVersionBytes + 1]{};
+
+    assert(core::SchemaBuilder::validateMaximumSchemaSize(
+               registry, maxWidthIdentity(board_id, firmware_version))
+               .code == api::StatusCode::CapacityExceeded);
+}
 
 void sealTimeMaximumTimestampReservationCoversRuntimeWidth() {
     core::CommandRegistry registry = smallRegistry();
@@ -131,14 +208,12 @@ void sealTimeMaximumTimestampReservationCoversRuntimeWidth() {
 }
 
 void validationDoesNotSealRegistry() {
-    core::CommandRegistry failed;
-    char huge_firmware[limits::kBoardTxMaxLineBytes]{};
-    for (std::size_t i = 0; i < sizeof(huge_firmware) - 1; ++i) {
-        huge_firmware[i] = 'x';
-    }
-    huge_firmware[sizeof(huge_firmware) - 1] = '\0';
+    core::CommandRegistry failed = generatedMaxWidthRegistry(10, 16, 23);
+    char board_id[limits::kMaxBoardIdBytes + 1]{};
+    char firmware_version[limits::kMaxFirmwareVersionBytes + 1]{};
 
-    assert(core::SchemaBuilder::validateMaximumSchemaSize(failed, {"board", "1", huge_firmware})
+    assert(core::SchemaBuilder::validateMaximumSchemaSize(
+               failed, maxWidthIdentity(board_id, firmware_version))
                .code == api::StatusCode::CapacityExceeded);
     assert(failed.lifecycle() == core::CommandRegistry::Lifecycle::Mutable);
     assertOk(failed.registerCommand(commandRegistration("after_failed_validation")));
@@ -154,7 +229,8 @@ void validationDoesNotSealRegistry() {
 int main() {
     goldenSchemaUsesContractShapeAndOrder();
     exactRuntimeCapacityIsAcceptedAndOneByteShortIsRejected();
-    constructedOversizedSchemaIsRejected();
+    validLargeSchemaFitsTransmitLimit();
+    validOversizedSchemaIsRejected();
     sealTimeMaximumTimestampReservationCoversRuntimeWidth();
     validationDoesNotSealRegistry();
 

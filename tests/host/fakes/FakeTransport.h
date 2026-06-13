@@ -33,6 +33,45 @@ public:
         peer_accepting_writes_ = false;
     }
 
+    void resetForConnection() {
+        inbound_script_.clear();
+        write_acceptance_script_.clear();
+        written_bytes_.clear();
+        flush_count_ = 0;
+        progress_count_ = 0;
+        peer_accepting_writes_ = true;
+        closed_ = false;
+        link_down_ = false;
+        aborted_ = false;
+    }
+
+    void progress() {
+        ++progress_count_;
+    }
+
+    void close() {
+        closed_ = true;
+    }
+
+    void abort() {
+        aborted_ = true;
+        closed_ = true;
+        inbound_script_.clear();
+        write_acceptance_script_.clear();
+    }
+
+    bool wasClosed() const {
+        return closed_;
+    }
+
+    bool wasAborted() const {
+        return aborted_;
+    }
+
+    std::size_t progressCount() const {
+        return progress_count_;
+    }
+
     std::size_t readSome(std::uint8_t* buffer, std::size_t capacity) override {
         if (buffer == nullptr || capacity == 0 || closed_ || link_down_) {
             return 0;
@@ -167,9 +206,11 @@ private:
     std::deque<std::size_t> write_acceptance_script_;
     std::vector<std::uint8_t> written_bytes_;
     std::size_t flush_count_ = 0;
+    std::size_t progress_count_ = 0;
     bool peer_accepting_writes_ = true;
     bool closed_ = false;
     bool link_down_ = false;
+    bool aborted_ = false;
 };
 
 }  // namespace teensy_command_server::host::fakes

@@ -6,6 +6,7 @@
 #include <deque>
 
 #include "core/NetworkServer.h"
+#include "fakes/FakeClock.h"
 #include "fakes/FakeTransport.h"
 
 namespace teensy_command_server::host::fakes {
@@ -30,6 +31,9 @@ public:
 
     void progress() override {
         ++progress_count_;
+        if (progress_clock_ != nullptr) {
+            progress_clock_->advanceMilliseconds(progress_clock_step_ms_);
+        }
         for (Slot& slot : slots_) {
             if (slot.active) {
                 slot.transport.progress();
@@ -115,6 +119,11 @@ public:
         availability_script_.pop_front();
     }
 
+    void advanceClockOnProgress(FakeClock& clock, std::uint64_t step_ms) {
+        progress_clock_ = &clock;
+        progress_clock_step_ms_ = step_ms;
+    }
+
     std::uint16_t listenPort() const {
         return listen_port_;
     }
@@ -174,6 +183,8 @@ private:
 
     std::array<Slot, core::NetworkServer::kConnectionSlotCount> slots_{};
     std::deque<core::NetworkAvailability> availability_script_;
+    FakeClock* progress_clock_ = nullptr;
+    std::uint64_t progress_clock_step_ms_ = 0;
     core::NetworkAvailability availability_ = core::NetworkAvailability::Uninitialized;
     std::size_t pending_connections_ = 0U;
     std::size_t progress_count_ = 0U;

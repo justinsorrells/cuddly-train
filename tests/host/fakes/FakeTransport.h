@@ -13,6 +13,13 @@ namespace teensy_command_server::host::fakes {
 
 class FakeTransport final : public core::Transport {
 public:
+    using WriteObserver = void (*)(void* context);
+
+    void setWriteObserver(WriteObserver observer, void* context) {
+        write_observer_ = observer;
+        write_observer_context_ = context;
+    }
+
     void scriptInboundBytes(const std::string& bytes) {
         inbound_script_.push_back(ScriptStep::bytes(bytes));
     }
@@ -99,6 +106,10 @@ public:
             connectionState() == core::TransportConnectionState::Closed ||
             connectionState() == core::TransportConnectionState::LinkDown) {
             return 0;
+        }
+
+        if (write_observer_ != nullptr) {
+            write_observer_(write_observer_context_);
         }
 
         std::size_t accepted = length;
@@ -205,6 +216,8 @@ private:
     std::deque<ScriptStep> inbound_script_;
     std::deque<std::size_t> write_acceptance_script_;
     std::vector<std::uint8_t> written_bytes_;
+    WriteObserver write_observer_ = nullptr;
+    void* write_observer_context_ = nullptr;
     std::size_t flush_count_ = 0;
     std::size_t progress_count_ = 0;
     bool peer_accepting_writes_ = true;

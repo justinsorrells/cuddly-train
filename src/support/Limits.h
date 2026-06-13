@@ -14,9 +14,6 @@ constexpr std::size_t kBoardTxMaxLineBytes = 8192;
 // §11.1: inbound accumulator capacity includes implementation terminator slack.
 constexpr std::size_t kInboundLineBufferBytes = kBoardRxMaxLineBytes + 1;
 
-// §11.1: parser capacity is sized from the bounded inbound command line.
-constexpr std::size_t kCommandJsonDocumentBytes = kBoardRxMaxLineBytes;
-
 // §11.1: outbound serializers are sized against the board-to-controller limit.
 constexpr std::size_t kSchemaJsonBufferBytes = kBoardTxMaxLineBytes;
 constexpr std::size_t kResponseJsonBufferBytes = kBoardTxMaxLineBytes;
@@ -58,6 +55,18 @@ constexpr std::size_t kMaxRegisteredCommands = 16;
 
 // §6.2, §14: V1 args are small and flat; full schema must fit 8192 bytes.
 constexpr std::size_t kMaxArgsPerCommand = 8;
+
+// §11.1: parser capacity is sized from the permitted inbound message shapes,
+// not from the wire byte limit: command root object slots plus one args object
+// and kMaxArgsPerCommand flat argument slots; estop/heartbeat are smaller.
+constexpr std::size_t kCommandJsonRootSlots = 7;
+constexpr std::size_t kCommandJsonArgsObjectSlots = 1;
+constexpr std::size_t kJsonDocumentSlotBytes = 64;
+constexpr std::size_t kJsonDocumentBaseBytes = 64;
+constexpr std::size_t kCommandJsonDocumentBytes =
+    kJsonDocumentBaseBytes +
+    (kCommandJsonRootSlots + kCommandJsonArgsObjectSlots + kMaxArgsPerCommand) *
+        kJsonDocumentSlotBytes;
 
 // §3, §6.1, §14: registration metadata is copied into fixed-capacity storage.
 constexpr std::size_t kMaxBoardIdBytes = 48;

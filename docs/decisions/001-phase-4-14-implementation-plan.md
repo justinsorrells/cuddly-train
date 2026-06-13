@@ -4,7 +4,7 @@ Date: 2026-06-13
 Status: ledgered
 
 (Filename retains the original `4-14` slug; the plan now spans Phases 4–18
-after eight external audit rounds added a network seam, API-extension and
+after nine external audit rounds added a network seam, API-extension and
 dependency-pin gates, a conformance fixture, actual-controller demo
 integration, and full hardware freeze gates. Status is ledgered; the entries
 have been appended to `backlog.md`.)
@@ -74,6 +74,7 @@ increment ONLY after successful wire transmission (never on enqueue).
 Canceled outcomes increment no sent counters.
 `commands_ok` on successful handler + enqueue; later wire transmission failures
 increment `tx_failures`, not command counters.
+`invalid_arguments` increments on missing required arg, invalid type, extra arg, or handler INVALID_ARGUMENT (but NOT for UNKNOWN_COMMAND, INTERNAL_ERROR, malformed JSON, wrong target/source, or tx failure).
 
 `board_proc_us` timing logic: `response_ready_us - parse_completed_us`
 using wrap-safe unsigned arithmetic, inserted only into successful results.

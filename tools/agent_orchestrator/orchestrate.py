@@ -1103,8 +1103,8 @@ class Orchestrator:
             commit_scope_paths = parse_commit_scope_paths(status_after)
             if not changed_files:
                 print("Codex made no changes.")
-                self.log_report(task_title, agent_branch, "STOP_BACKLOG_EMPTY", "Codex executed but made no modifications.")
-                return "STOP_BACKLOG_EMPTY"
+                self.log_report(task_title, agent_branch, "STOP_CODEX_NO_CHANGES", "Codex executed but made no modifications.")
+                return "STOP_CODEX_NO_CHANGES"
 
             # 7. Check forbidden changes before running reviews
             forbidden_stop = self.check_forbidden_patterns(diff, changed_files, task_content)

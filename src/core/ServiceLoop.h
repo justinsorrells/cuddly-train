@@ -40,6 +40,7 @@ public:
         bool (*command_with_timing)(const ParsedCommand& command,
                                     std::uint64_t parse_completed_us,
                                     void* context) = nullptr;
+        void (*telemetry_inactive)(void* context) = nullptr;
     };
 
     ServiceLoop(Counters& counters,
@@ -92,7 +93,7 @@ public:
             return;
         }
 
-        runTelemetryDueCheck();
+        runTelemetryDueCheck(session);
 
         bool drained_outbound = false;
         if (scheduler_.hasPending()) {
@@ -195,10 +196,33 @@ private:
         }
     }
 
-    void runTelemetryDueCheck() {
-        if (routes_.telemetry_due != nullptr) {
-            routes_.telemetry_due(scheduler_, routes_.context);
+    template <typename SessionDriverLike>
+    void runTelemetryDueCheck(const SessionDriverLike& session) {
+        if (telemetrySessionActive(session)) {
+            if (routes_.telemetry_due != nullptr) {
+                routes_.telemetry_due(scheduler_, routes_.context);
+            }
+            return;
         }
+        if (routes_.telemetry_inactive != nullptr) {
+            routes_.telemetry_inactive(routes_.context);
+        }
+    }
+
+    template <typename SessionDriverLike>
+    static auto telemetrySessionActiveImpl(const SessionDriverLike& session, int)
+        -> decltype(session.sessionActive(), bool()) {
+        return session.sessionActive() && !session.teardownPending();
+    }
+
+    template <typename SessionDriverLike>
+    static bool telemetrySessionActiveImpl(const SessionDriverLike& session, long) {
+        return !session.teardownPending();
+    }
+
+    template <typename SessionDriverLike>
+    static bool telemetrySessionActive(const SessionDriverLike& session) {
+        return telemetrySessionActiveImpl(session, 0);
     }
 
     void routeRecoverableCommandError(const RecoverableCommandError& error) {
@@ -229,7 +253,9 @@ private:
             return false;
         }
         routeOutcome(outcome);
-        if (outcome.completion == OutboundCompletion::SendFailed || session.teardownPending()) {
+        if (session.teardownPending() ||
+            (outcome.completion == OutboundCompletion::SendFailed &&
+             outcome.kind != OutboundKind::Telemetry)) {
             if (!session.teardownPending()) {
                 session.requestTeardown(TeardownReason::CriticalTransmitFailure);
             }

@@ -1488,7 +1488,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Implement the facade, service pump, and outbound scheduler
+* [x] Task: Implement the facade, service pump, and outbound scheduler
   (Phase 7)
 
   ## Goal

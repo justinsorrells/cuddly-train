@@ -522,7 +522,15 @@ def git_commit(message: str, paths: List[str]) -> Tuple[int, str]:
         return add_code, add_out + "\n" + add_err
 
     code, out, err = run_cmd(["git", "commit", "-m", message, "--", *paths])
-    return code, out + "\n" + err
+    combined = out + "\n" + err
+    # An upstream agent (codex/review/audit) runs in this same workspace and may
+    # have already committed the reviewed changes. In that case git exits non-zero
+    # with "nothing to commit" even though the work is safely in HEAD. The earlier
+    # no-changes guard (STOP_CODEX_NO_CHANGES) means real changes did exist, so a
+    # clean tree here is success, not a tool error.
+    if code != 0 and "nothing to commit" in combined:
+        return 0, combined + "\n(reviewed changes already committed; nothing left to stage)"
+    return code, combined
 
 def git_diff() -> str:
     _, out, _ = run_cmd(["git", "diff"])

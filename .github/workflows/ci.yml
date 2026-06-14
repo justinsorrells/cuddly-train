@@ -27,14 +27,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Passes trivially until sketches exist (build_teensy.sh no-ops).
-      # When the first sketch lands (backlog Phase 9), enable the setup steps
-      # below and pin library versions per docs/companion/Build_and_Flash_Guide.md:
-      #
-      # - uses: arduino/setup-arduino-cli@v2
-      # - run: arduino-cli core install teensy:avr
-      #        --additional-urls https://www.pjrc.com/teensy/package_teensy_index.json
-      # - run: arduino-cli lib install QNEthernet ArduinoJson
+      - uses: arduino/setup-arduino-cli@v2
+        with:
+          version: 1.3.1
+      - run: |
+          arduino-cli core update-index \
+            --additional-urls https://www.pjrc.com/teensy/package_teensy_index.json
+          arduino-cli core install teensy:avr@1.59.0 \
+            --additional-urls https://www.pjrc.com/teensy/package_teensy_index.json
+      - run: |
+          arduino-cli lib install "QNEthernet@0.35.0"
+          arduino-cli lib install "ArduinoJson@6.21.5"
       - run: ./tools/build_teensy.sh
 
   # Hardware/conformance tests are manual-only (tests/hardware/, tools/run_conformance.sh).

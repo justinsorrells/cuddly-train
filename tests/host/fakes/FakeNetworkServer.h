@@ -33,6 +33,10 @@ public:
         next_connection_link_down_ = true;
     }
 
+    void rejectNextAccept() {
+        reject_next_accept_ = true;
+    }
+
     void forceNextGeneration(std::uint8_t slot, std::uint32_t generation) {
         if (slot >= slots_.size() || slots_[slot].active) {
             return;
@@ -79,6 +83,11 @@ public:
 
     core::ConnectionHandle accept() override {
         if (!hasPendingConnection()) {
+            return core::kInvalidConnection;
+        }
+        if (reject_next_accept_) {
+            reject_next_accept_ = false;
+            --pending_connections_;
             return core::kInvalidConnection;
         }
 
@@ -221,6 +230,7 @@ private:
     bool listening_ = false;
     bool next_connection_stops_writes_ = false;
     bool next_connection_link_down_ = false;
+    bool reject_next_accept_ = false;
 };
 
 }  // namespace teensy_command_server::host::fakes

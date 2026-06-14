@@ -113,7 +113,9 @@ public:
         }
 
         const bool had_active = isValidConnectionHandle(active_handle_);
-        runControllerLossHook();
+        if (had_active) {
+            runControllerLossHook();
+        }
         framer_.closeSession();
         writer_.clearTransport();
         if (had_active) {

@@ -145,6 +145,7 @@ void schemaIsFirstBytesAndReconnectResendsIt() {
     assert(first_written.find("{\"type\":\"schema\"") == 0);
     assert(first_written.find("\"source\":\"motor_controller\"") != std::string::npos);
     assert(first_written.back() == '\n');
+    assert(harness.clock.monotonicMilliseconds() <= limits::kRegistrationWindowMs);
     assert(harness.counters.sessions_accepted == 1);
     assert(harness.counters.schemas_sent == 1);
 
@@ -161,6 +162,22 @@ void schemaIsFirstBytesAndReconnectResendsIt() {
     assert(harness.counters.schemas_sent == 2);
     assert(harness.counters.controller_disconnects == 1);
     assert(harness.hook_calls == 1);
+}
+
+void rejectedAcceptIncrementsOnlyRejectedCounter() {
+    Harness harness;
+    harness.startListening();
+
+    harness.server.rejectNextAccept();
+    harness.server.queueInboundConnection();
+    harness.driver.poll();
+
+    assert(harness.driver.state() == core::SessionState::LISTENING);
+    assert(!harness.driver.sessionActive());
+    assert(harness.counters.sessions_rejected == 1);
+    assert(harness.counters.sessions_accepted == 0);
+    assert(harness.counters.controller_disconnects == 0);
+    assert(harness.hook_calls == 0);
 }
 
 void schemaSendFailureClosesToListening() {
@@ -310,16 +327,30 @@ void releaseLineRemainsValidAfterClosing() {
     assert(harness.driver.state() == core::SessionState::LISTENING);
 }
 
+void shutdownWithoutAcceptedSessionDoesNotRunLossHook() {
+    Harness harness;
+    harness.startListening();
+
+    harness.driver.requestShutdown();
+    harness.driver.applyPendingTeardown();
+
+    assert(harness.driver.state() == core::SessionState::LISTENING);
+    assert(harness.counters.controller_disconnects == 0);
+    assert(harness.hook_calls == 0);
+}
+
 }  // namespace
 
 int main() {
     startsSafeAndRetriesNetworkInitWithoutCommands();
     schemaIsFirstBytesAndReconnectResendsIt();
+    rejectedAcceptIncrementsOnlyRejectedCounter();
     schemaSendFailureClosesToListening();
     supersessionRunsLossHookClearsFramerAndPromotesReplacement();
     linkLossCasesReturnToListeningAndRestorationRelistens();
     connectionLossRunsHookAndNoLineAfterLoss();
     releaseLineRemainsValidAfterClosing();
+    shutdownWithoutAcceptedSessionDoesNotRunLossHook();
     std::puts("test_session_driver: ok");
     return 0;
 }

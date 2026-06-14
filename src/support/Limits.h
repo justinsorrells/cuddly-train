@@ -21,6 +21,14 @@ constexpr std::size_t kTelemetryJsonBufferBytes = kBoardTxMaxLineBytes;
 constexpr std::size_t kEventJsonBufferBytes = kBoardTxMaxLineBytes;
 constexpr std::size_t kHeartbeatJsonBufferBytes = kBoardTxMaxLineBytes;
 
+// §13.4 outbound scheduler: four queued critical messages plus one replaceable
+// telemetry slot. Each critical entry owns a full board-to-controller line.
+constexpr std::size_t kOutboundCriticalQueueCapacity = 4;
+constexpr std::size_t kOutboundCancellationBatchCapacity =
+    kOutboundCriticalQueueCapacity + 1;
+constexpr std::size_t kOutboundCriticalEntryMaxBytes = kBoardTxMaxLineBytes;
+constexpr std::size_t kOutboundSchedulerMaxBytes = 48 * 1024;
+
 // ObjectWriter payload is intentionally smaller than the full response line so
 // §16 envelope fields and library-owned board_proc_us always fit.
 constexpr std::size_t kResponseEnvelopeReserveBytes = 512;

@@ -1369,7 +1369,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Implement the session state-machine driver (Phase 6)
+* [x] Task: Implement the session state-machine driver (Phase 6)
 
   ## Goal
 

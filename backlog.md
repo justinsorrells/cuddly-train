@@ -1454,6 +1454,7 @@ existing states and edges.
   ## Allowed files
 
   * `src/core/SessionDriver.h`
+  * `src/core/OutboundWriter.h` (allowed to resolve the `SessionDriver` name collision)
   * `src/support/Limits.h` (`kNetworkInitRetryMs` only)
   * `tests/host/unit/test_session_driver.cpp`
   * `tests/host/fakes/*` (extend as needed)

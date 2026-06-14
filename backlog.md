@@ -1742,7 +1742,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: OPERATOR GATE — API-extension review (Phase 9)
+* [x] Task: OPERATOR GATE — API-extension review (Phase 9)
 
   ## Goal
 

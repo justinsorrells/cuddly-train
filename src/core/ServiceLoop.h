@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/Clock.h"
 #include "core/Counters.h"
 #include "core/InboundParser.h"
 #include "core/OutboundScheduler.h"
@@ -36,6 +37,9 @@ public:
         void (*telemetry_due)(OutboundScheduler& scheduler, void* context) = nullptr;
         void (*outbound_outcome)(const OutboundOutcome& outcome, void* context) = nullptr;
         void* context = nullptr;
+        bool (*command_with_timing)(const ParsedCommand& command,
+                                    std::uint64_t parse_completed_us,
+                                    void* context) = nullptr;
     };
 
     ServiceLoop(Counters& counters,
@@ -46,12 +50,33 @@ public:
     ServiceLoop(Counters& counters,
                 const api::BoardIdentity& identity,
                 OutboundScheduler& scheduler,
+                const Clock& clock)
+        : ServiceLoop(counters, identity, scheduler, Routes{}, &clock) {}
+
+    ServiceLoop(Counters& counters,
+                const api::BoardIdentity& identity,
+                OutboundScheduler& scheduler,
                 Routes routes)
+        : ServiceLoop(counters, identity, scheduler, routes, nullptr) {}
+
+    ServiceLoop(Counters& counters,
+                const api::BoardIdentity& identity,
+                OutboundScheduler& scheduler,
+                Routes routes,
+                const Clock& clock)
+        : ServiceLoop(counters, identity, scheduler, routes, &clock) {}
+
+    ServiceLoop(Counters& counters,
+                const api::BoardIdentity& identity,
+                OutboundScheduler& scheduler,
+                Routes routes,
+                const Clock* clock)
         : counters_(counters),
           identity_(identity),
           scheduler_(scheduler),
           parser_(counters),
-          routes_(routes) {}
+          routes_(routes),
+          clock_(clock) {}
 
     template <typename SessionDriverLike>
     void service(SessionDriverLike& session) {
@@ -103,8 +128,10 @@ private:
     void processLine(MutableLineView line, SessionDriverLike& session) {
         const SourceTarget root_gate = extractSourceTarget(line);
         const ParseOutcome outcome = parser_.parse(line);
+        const std::uint64_t parse_completed_us =
+            clock_ == nullptr ? 0 : clock_->monotonicMicroseconds();
         if (outcome.kind == ParseOutcomeKind::Valid) {
-            routeValid(outcome, root_gate, session);
+            routeValid(outcome, root_gate, parse_completed_us, session);
             return;
         }
 
@@ -123,13 +150,22 @@ private:
     template <typename SessionDriverLike>
     void routeValid(const ParseOutcome& outcome,
                     const SourceTarget& root_gate,
+                    std::uint64_t parse_completed_us,
                     SessionDriverLike& session) {
         if (outcome.message_kind == InboundMessageKind::Command) {
             if (!validControllerTarget(root_gate)) {
                 counters_.increment(&Counters::invalid_targets);
                 return;
             }
-            if (routes_.command == nullptr || routes_.command(outcome.command, routes_.context)) {
+            bool teardown_requested = true;
+            if (routes_.command_with_timing != nullptr) {
+                teardown_requested =
+                    routes_.command_with_timing(outcome.command, parse_completed_us,
+                                                routes_.context);
+            } else if (routes_.command != nullptr) {
+                teardown_requested = routes_.command(outcome.command, routes_.context);
+            }
+            if (teardown_requested) {
                 session.requestTeardown(TeardownReason::CriticalTransmitFailure);
             }
             return;
@@ -272,6 +308,7 @@ private:
     OutboundScheduler& scheduler_;
     InboundParser parser_;
     Routes routes_;
+    const Clock* clock_;
 };
 
 }  // namespace teensy_command_server::core

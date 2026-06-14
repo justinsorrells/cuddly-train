@@ -472,7 +472,10 @@ void serviceLoopPassesParseCompletionToTimedCommandRoute() {
     core::ServiceLoop::Routes routes;
     routes.context = &state;
     routes.command_with_timing = timedRoute;
-    core::ServiceLoop loop(counters, {"motor", "1", "0.1.0"}, scheduler, routes, clock);
+    // ServiceLoop stores the identity by reference (the facade owns a long-lived
+    // identity), so it must outlive the loop — use a named local, not a temporary.
+    const api::BoardIdentity identity{"motor", "1", "0.1.0"};
+    core::ServiceLoop loop(counters, identity, scheduler, routes, clock);
     char command[] =
         "{\"type\":\"command\",\"seq\":91,\"controller_ts\":91,"
         "\"source\":\"controller\",\"target\":\"motor\",\"command\":\"get_status\","
@@ -491,7 +494,10 @@ void serviceLoopRequestsTeardownOnResponseSendFailure() {
     assert(scheduler.enqueueCritical(core::OutboundKind::CommandResponse,
                                      {"{\"type\":\"response\"}\n", 20}) ==
            core::OutboundEnqueueResult::Queued);
-    core::ServiceLoop loop(counters, {"motor", "1", "0.1.0"}, scheduler);
+    // ServiceLoop holds the identity by reference; keep it in a named local so it
+    // outlives the loop (see the note above).
+    const api::BoardIdentity identity{"motor", "1", "0.1.0"};
+    core::ServiceLoop loop(counters, identity, scheduler);
     struct Session {
         bool pending = false;
         bool applied = false;

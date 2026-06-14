@@ -400,7 +400,7 @@ private:
 
     Counters& counters_;
     const CommandRegistry& registry_;
-    const api::BoardIdentity& identity_;
+    const api::BoardIdentity identity_;
     const Clock& clock_;
     OutboundScheduler& scheduler_;
     char response_line_[support::kResponseJsonBufferBytes]{};

@@ -2154,7 +2154,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Add the smoke and conformance sketches and enable Teensy CI
+* [x] Task: Add the smoke and conformance sketches and enable Teensy CI
   (Phase 15)
 
   ## Goal

@@ -13,6 +13,7 @@ namespace limits = teensy_command_server::support;
 
 struct FakeSession {
     core::OutboundSendResult result = core::OutboundSendResult::Sent;
+    core::OutboundScheduler* scheduler_to_mutate = nullptr;
     unsigned sends = 0;
     std::string written;
     core::MessageClass last_class = core::MessageClass::Critical;
@@ -22,6 +23,12 @@ struct FakeSession {
         ++sends;
         last_class = message_class;
         written.assign(line.data, line.size);
+        if (scheduler_to_mutate != nullptr) {
+            assert(scheduler_to_mutate->enqueueCritical(core::OutboundKind::EstopAck,
+                                                        {"{\"s\":2}\n", 8}) ==
+                   core::OutboundEnqueueResult::Queued);
+            scheduler_to_mutate = nullptr;
+        }
         return result;
     }
 };
@@ -164,6 +171,24 @@ void sendFailureReportsOutcome() {
     assert(outcome.completion == core::OutboundCompletion::SendFailed);
 }
 
+void startedWriteIsNotPreemptedByNewHigherPriorityEntry() {
+    core::OutboundScheduler scheduler;
+    FakeSession session;
+    session.scheduler_to_mutate = &scheduler;
+    core::OutboundOutcome outcome{};
+
+    assert(scheduler.enqueueCritical(core::OutboundKind::HeartbeatAck, line("{\"h\":1}\n")) ==
+           core::OutboundEnqueueResult::Queued);
+
+    assert(scheduler.drainOne(session, outcome));
+    assert(outcome.kind == core::OutboundKind::HeartbeatAck);
+    assert(session.written == "{\"h\":1}\n");
+
+    assert(scheduler.drainOne(session, outcome));
+    assert(outcome.kind == core::OutboundKind::EstopAck);
+    assert(session.written == "{\"s\":2}\n");
+}
+
 }  // namespace
 
 int main() {
@@ -174,5 +199,6 @@ int main() {
     queueSaturationRequestsTeardown();
     cancellationReturnsFiveOutcomesAndRestoresPersistentEstopTriggered();
     sendFailureReportsOutcome();
+    startedWriteIsNotPreemptedByNewHigherPriorityEntry();
     return 0;
 }

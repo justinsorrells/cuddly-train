@@ -59,17 +59,22 @@ public:
 
         MutableLineView line{};
         const bool acquired = session.nextLine(line);
-        if (session.teardownPending() && !acquired) {
+        if (session.teardownPending()) {
+            if (acquired) {
+                session.releaseLine();
+            }
             cancelRouteAndApply(session);
             return;
         }
 
         runTelemetryDueCheck();
 
-        if (!acquired && scheduler_.hasPending()) {
-            if (drainRouteAndMaybeTeardown(session)) {
+        bool drained_outbound = false;
+        if (scheduler_.hasPending()) {
+            if (drainRouteAndMaybeTeardown(session, acquired)) {
                 return;
             }
+            drained_outbound = true;
         }
 
         if (acquired) {
@@ -81,8 +86,8 @@ public:
                 return;
             }
 
-            if (scheduler_.hasPending()) {
-                (void)drainRouteAndMaybeTeardown(session);
+            if (!drained_outbound && scheduler_.hasPending()) {
+                (void)drainRouteAndMaybeTeardown(session, false);
             }
         }
     }
@@ -106,7 +111,7 @@ private:
         if (outcome.kind == ParseOutcomeKind::StructurallyInvalid &&
             outcome.message_kind == InboundMessageKind::Command && outcome.has_seq &&
             outcome.has_controller_ts && outcome.has_suggested_error) {
-            if (!validControllerTarget(root_gate)) {
+            if (root_gate.valid && !validControllerTarget(root_gate)) {
                 counters_.increment(&Counters::invalid_targets);
                 return;
             }
@@ -182,7 +187,7 @@ private:
     }
 
     template <typename SessionDriverLike>
-    bool drainRouteAndMaybeTeardown(SessionDriverLike& session) {
+    bool drainRouteAndMaybeTeardown(SessionDriverLike& session, bool line_acquired) {
         OutboundOutcome outcome{};
         if (!scheduler_.drainOne(session, outcome)) {
             return false;
@@ -191,6 +196,9 @@ private:
         if (outcome.completion == OutboundCompletion::SendFailed || session.teardownPending()) {
             if (!session.teardownPending()) {
                 session.requestTeardown(TeardownReason::CriticalTransmitFailure);
+            }
+            if (line_acquired) {
+                session.releaseLine();
             }
             cancelRouteAndApply(session);
             return true;

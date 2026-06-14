@@ -57,6 +57,7 @@ struct FakeSession {
     unsigned polls = 0;
     unsigned next_line_calls = 0;
     unsigned send_calls = 0;
+    std::string last_sent;
     core::MutableLineView line{};
     core::OutboundSendResult send_result = core::OutboundSendResult::Sent;
     core::TeardownReason reason = core::TeardownReason::ExplicitShutdown;
@@ -95,9 +96,10 @@ struct FakeSession {
         pending_teardown = false;
     }
 
-    core::OutboundSendResult sendActiveLine(core::ConstLineView,
+    core::OutboundSendResult sendActiveLine(core::ConstLineView outbound,
                                             core::MessageClass) {
         ++send_calls;
+        last_sent.assign(outbound.data, outbound.size);
         return send_result;
     }
 };
@@ -113,11 +115,17 @@ struct RouteState {
     unsigned canceled_outcomes = 0;
     core::RecoverableCommandError last_error{};
     bool command_requests_teardown = true;
+    core::OutboundScheduler* scheduler_to_enqueue_from_command = nullptr;
 };
 
 bool routeCommand(const core::ParsedCommand&, void* raw) {
     auto* state = static_cast<RouteState*>(raw);
     ++state->commands;
+    if (state->scheduler_to_enqueue_from_command != nullptr) {
+        assert(state->scheduler_to_enqueue_from_command->enqueueCritical(
+                   core::OutboundKind::EstopAck, {"{\"ack\":1}\n", 10}) ==
+               core::OutboundEnqueueResult::Queued);
+    }
     return state->command_requests_teardown;
 }
 
@@ -366,8 +374,10 @@ void recoverableCommandErrorAndFailClosedCommandStub() {
     session.line = line(missing_target);
     session.line_available = true;
     loop.service(session);
-    assert(route_state.recoverable == 1);
-    assert(counters.invalid_targets == 2);
+    assert(route_state.recoverable == 2);
+    assert(route_state.last_error.seq == 44);
+    assert(route_state.last_error.code == core::BoardErrorCode::MissingField);
+    assert(counters.invalid_targets == 1);
     assert(counters.invalid_json == 0);
 
     char wrong_source_missing_args[] =
@@ -377,8 +387,8 @@ void recoverableCommandErrorAndFailClosedCommandStub() {
     session.line = line(wrong_source_missing_args);
     session.line_available = true;
     loop.service(session);
-    assert(route_state.recoverable == 1);
-    assert(counters.invalid_targets == 3);
+    assert(route_state.recoverable == 2);
+    assert(counters.invalid_targets == 2);
     assert(counters.invalid_json == 0);
 
     char command[] =
@@ -399,13 +409,12 @@ void teardownBarrierWaitsForReleaseAndCancelsBeforeAbort() {
     api::BoardIdentity identity{"board", "1", "0.1.0"};
     RouteState route_state;
     route_state.command_requests_teardown = true;
+    route_state.scheduler_to_enqueue_from_command = &scheduler;
     core::ServiceLoop loop(counters, identity, scheduler, routes(route_state));
     FakeSession session;
     char command[] =
         "{\"type\":\"command\",\"seq\":1,\"controller_ts\":1,\"source\":\"controller\","
         "\"target\":\"board\",\"command\":\"x\",\"args\":{}}\n";
-    assert(scheduler.enqueueCritical(core::OutboundKind::EstopAck, {"{\"ack\":1}\n", 10}) ==
-           core::OutboundEnqueueResult::Queued);
     session.line = line(command);
     session.line_available = true;
 
@@ -437,9 +446,36 @@ void noSecondLineAndAtMostOneSendPerService() {
     loop.service(session);
     assert(session.next_line_calls == 1);
     assert(session.send_calls == 1);
+    assert(session.last_sent == "{\"r\":1}\n");
     assert(route_state.telemetry_due == 1);
     assert(route_state.commands == 1);
     assert(counters.heartbeat_ack_sent == 0);
+}
+
+void telemetryDrainsBeforeContinuousCommandInput() {
+    core::Counters counters;
+    core::OutboundScheduler scheduler;
+    api::BoardIdentity identity{"board", "1", "0.1.0"};
+    RouteState route_state;
+    route_state.command_requests_teardown = false;
+    core::ServiceLoop loop(counters, identity, scheduler, routes(route_state));
+    FakeSession session;
+    char command[] =
+        "{\"type\":\"command\",\"seq\":1,\"controller_ts\":1,\"source\":\"controller\","
+        "\"target\":\"board\",\"command\":\"x\",\"args\":{}}\n";
+    session.line = line(command);
+    session.line_available = true;
+    assert(scheduler.replaceTelemetry({"{\"t\":1}\n", 8}, counters) ==
+           core::OutboundEnqueueResult::Queued);
+
+    loop.service(session);
+
+    assert(route_state.telemetry_due == 1);
+    assert(route_state.commands == 1);
+    assert(session.next_line_calls == 1);
+    assert(session.send_calls == 1);
+    assert(session.last_sent == "{\"t\":1}\n");
+    assert(counters.telemetry_sent == 1);
 }
 
 void sendFailureTeardownBeforeReturnAndDefaultStubsFailClosed() {
@@ -480,6 +516,7 @@ int main() {
     recoverableCommandErrorAndFailClosedCommandStub();
     teardownBarrierWaitsForReleaseAndCancelsBeforeAbort();
     noSecondLineAndAtMostOneSendPerService();
+    telemetryDrainsBeforeContinuousCommandInput();
     sendFailureTeardownBeforeReturnAndDefaultStubsFailClosed();
     return 0;
 }

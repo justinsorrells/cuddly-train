@@ -1875,7 +1875,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Implement the telemetry scheduler (Phase 11)
+* [x] Task: Implement the telemetry scheduler (Phase 11)
 
   ## Goal
 

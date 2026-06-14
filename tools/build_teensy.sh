@@ -17,11 +17,14 @@ while IFS= read -r -d '' ino; do
     if [[ "$(dirname "$sketch_dir")" == "sketches" \
           && "$(basename "$ino")" == "$(basename "$sketch_dir").ino" ]]; then
         valid_dirs+=("$sketch_dir")
+    elif [[ "$(dirname "$sketch_dir")" == "tests/hardware/fixtures" \
+          && "$(basename "$ino")" == "$(basename "$sketch_dir").ino" ]]; then
+        valid_dirs+=("$sketch_dir")
     else
-        echo "build_teensy: $ino violates required layout sketches/<name>/<name>.ino" >&2
+        echo "build_teensy: $ino violates required layout sketches/<name>/<name>.ino or tests/hardware/fixtures/<name>/<name>.ino" >&2
         invalid=$((invalid + 1))
     fi
-done < <(find sketches -name '*.ino' -print0 2>/dev/null | sort -z)
+done < <(find sketches tests/hardware/fixtures -name '*.ino' -print0 2>/dev/null | sort -z)
 
 if [[ "$invalid" -gt 0 ]]; then
     echo "build_teensy: $invalid misplaced .ino file(s); fix the layout before building" >&2
@@ -29,7 +32,7 @@ if [[ "$invalid" -gt 0 ]]; then
 fi
 
 if [[ ${#valid_dirs[@]} -eq 0 ]]; then
-    echo "build_teensy: no sketches yet (bootstrap state) — nothing to build"
+    echo "build_teensy: no sketches or compile fixtures yet (bootstrap state) — nothing to build"
     exit 0
 fi
 
@@ -38,10 +41,33 @@ if ! command -v arduino-cli >/dev/null 2>&1; then
     exit 1
 fi
 
+build_root=$(mktemp -d "${TMPDIR:-/tmp}/teensy-build.XXXXXX")
+library_root="$build_root/libraries/TeensyCommandServer"
+mkdir -p "$library_root"
+ln -s "$PWD/src" "$library_root/src"
+cat >"$library_root/library.properties" <<'PROPERTIES'
+name=TeensyCommandServer
+version=0.0.0
+author=Teensy Command Server
+maintainer=Teensy Command Server
+sentence=Teensy 4.1 command-server library.
+paragraph=Compile-only staged library for repository validation.
+category=Communication
+architectures=*
+includes=TeensyCommandServer.h
+PROPERTIES
+cleanup() {
+    rm -rf "$build_root"
+}
+trap cleanup EXIT
+
 failures=0
 for sketch_dir in "${valid_dirs[@]}"; do
     echo "compiling $sketch_dir"
-    if ! arduino-cli compile --fqbn "$FQBN" --libraries src --warnings all "$sketch_dir"; then
+    sketch_name=$(basename "$sketch_dir")
+    if ! arduino-cli compile --fqbn "$FQBN" --library "$library_root" --warnings all \
+        --build-path "$build_root/$sketch_name" \
+        "$sketch_dir"; then
         failures=$((failures + 1))
     fi
 done

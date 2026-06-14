@@ -41,6 +41,9 @@ public:
                                     std::uint64_t parse_completed_us,
                                     void* context) = nullptr;
         void (*telemetry_inactive)(void* context) = nullptr;
+        bool (*estop_with_result)(const ParsedEstop& estop, void* context) = nullptr;
+        bool (*heartbeat_with_result)(const ParsedHeartbeat& heartbeat, void* context) = nullptr;
+        bool (*safety_due)(OutboundScheduler& scheduler, void* context) = nullptr;
     };
 
     ServiceLoop(Counters& counters,
@@ -94,6 +97,10 @@ public:
         }
 
         runTelemetryDueCheck(session);
+        if (runSafetyDueCheck(session)) {
+            cancelRouteAndApply(session);
+            return;
+        }
 
         bool drained_outbound = false;
         if (scheduler_.hasPending()) {
@@ -179,6 +186,12 @@ private:
             }
             if (routes_.estop != nullptr) {
                 routes_.estop(outcome.estop, routes_.context);
+            } else if (routes_.estop_with_result != nullptr) {
+                const bool teardown_requested =
+                    routes_.estop_with_result(outcome.estop, routes_.context);
+                if (teardown_requested) {
+                    session.requestTeardown(TeardownReason::CriticalTransmitFailure);
+                }
             } else {
                 counters_.increment(&Counters::estop_apply_failed);
             }
@@ -192,6 +205,12 @@ private:
             }
             if (routes_.heartbeat != nullptr) {
                 routes_.heartbeat(outcome.heartbeat, routes_.context);
+            } else if (routes_.heartbeat_with_result != nullptr) {
+                const bool teardown_requested =
+                    routes_.heartbeat_with_result(outcome.heartbeat, routes_.context);
+                if (teardown_requested) {
+                    session.requestTeardown(TeardownReason::CriticalTransmitFailure);
+                }
             }
         }
     }
@@ -207,6 +226,19 @@ private:
         if (routes_.telemetry_inactive != nullptr) {
             routes_.telemetry_inactive(routes_.context);
         }
+    }
+
+    template <typename SessionDriverLike>
+    bool runSafetyDueCheck(SessionDriverLike& session) {
+        if (!telemetrySessionActive(session) || routes_.safety_due == nullptr) {
+            return false;
+        }
+        const bool teardown_requested = routes_.safety_due(scheduler_, routes_.context);
+        if (teardown_requested) {
+            session.requestTeardown(TeardownReason::CriticalTransmitFailure);
+            return true;
+        }
+        return false;
     }
 
     template <typename SessionDriverLike>

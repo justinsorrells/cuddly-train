@@ -9,6 +9,8 @@
 #include "core/CommandDispatcher.h"
 #include "core/CommandRegistry.h"
 #include "core/DiagnosticsCommand.h"
+#include "core/EstopHandler.h"
+#include "core/HeartbeatHandler.h"
 #include "core/NetworkServer.h"
 #include "core/OutboundScheduler.h"
 #include "core/SchemaBuilder.h"
@@ -115,6 +117,10 @@ public:
         return result;
     }
 
+    api::Status requestEstopTriggered(const char* reason) {
+        return estop_handler_.requestEstopTriggered(reason, clock_, scheduler_);
+    }
+
     api::Status start() {
         if (!network_config_set_) {
             return status(api::StatusCode::InvalidConfiguration, "network config is required");
@@ -201,9 +207,49 @@ private:
         return dispatcher.dispatch(command, parse_completed_us);
     }
 
+    static bool routeEstop(const core::ParsedEstop& estop, void* context) {
+        auto* self = static_cast<TeensyCommandServer*>(context);
+        if (self == nullptr) {
+            return false;
+        }
+        const core::CommandRegistry::StoredHook hook = self->registry_.estopHook();
+        return self->estop_handler_.handleEstop(estop, self->counters_, self->identity_,
+                                                self->clock_, hook.fn, hook.context,
+                                                self->scheduler_);
+    }
+
+    static bool routeHeartbeat(const core::ParsedHeartbeat& heartbeat, void* context) {
+        auto* self = static_cast<TeensyCommandServer*>(context);
+        if (self == nullptr) {
+            return false;
+        }
+        return self->heartbeat_handler_.handleHeartbeat(heartbeat, self->counters_,
+                                                        self->identity_, self->scheduler_);
+    }
+
+    static bool routeSafetyDue(core::OutboundScheduler& scheduler, void* context) {
+        auto* self = static_cast<TeensyCommandServer*>(context);
+        if (self == nullptr) {
+            return false;
+        }
+        return self->estop_handler_.service(scheduler, self->identity_);
+    }
+
+    static void routeOutboundOutcome(const core::OutboundOutcome& outcome, void* context) {
+        auto* self = static_cast<TeensyCommandServer*>(context);
+        if (self == nullptr) {
+            return;
+        }
+        self->estop_handler_.onOutboundOutcome(outcome, self->scheduler_);
+    }
+
     static core::ServiceLoop::Routes facadeRoutes(TeensyCommandServer* self) {
         core::ServiceLoop::Routes routes;
         routes.command_with_timing = routeCommand;
+        routes.estop_with_result = routeEstop;
+        routes.heartbeat_with_result = routeHeartbeat;
+        routes.safety_due = routeSafetyDue;
+        routes.outbound_outcome = routeOutboundOutcome;
         routes.context = self;
         return routes;
     }
@@ -214,6 +260,8 @@ private:
     core::CommandRegistry registry_;
     core::SchemaBuilder schema_builder_;
     core::OutboundScheduler scheduler_;
+    core::EstopHandler estop_handler_;
+    core::HeartbeatHandler heartbeat_handler_;
     api::BoardIdentity identity_{nullptr, nullptr, nullptr};
     api::NetworkConfig network_config_{api::NetworkConfig::Mode::Dhcp, 0, {0, 0, 0, 0},
                                        {0, 0, 0, 0}, {0, 0, 0, 0}};

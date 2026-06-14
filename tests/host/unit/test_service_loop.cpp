@@ -239,7 +239,7 @@ void facadeSealsAndFailedStartLeavesMutable() {
                .code == api::StatusCode::RegistrationSealed);
 }
 
-void facadeServicePumpIsExplicitlyFailClosedForPhase7Routes() {
+void facadeServicePumpHandlesSafetyAndHeartbeatRoutes() {
     FacadeHarness harness;
     harness.configure();
     fakes::FakeTransport* transport = harness.acceptFirstSession();
@@ -266,21 +266,25 @@ void facadeServicePumpIsExplicitlyFailClosedForPhase7Routes() {
     estop_transport->scriptInboundBytes(
         "{\"type\":\"estop\",\"source\":\"controller\",\"target\":\"board\"}\n");
     estop_harness.server.service();
-    assert(estop_harness.estop_calls == 0);
+    assert(estop_harness.estop_calls == 1);
     assert(estop_harness.loss_calls == 0);
-    assert(estop_harness.server.counters().estop_apply_failed == 1);
-    assert(estop_harness.server.counters().estop_ack_sent == 0);
-    assert(estop_transport->writtenString() == schema_only);
+    assert(estop_harness.server.counters().estop_apply_failed == 0);
+    assert(estop_harness.server.counters().estop_ack_sent == 1);
+    assert(estop_transport->writtenString().find("\"event\":\"estop_ack\"") !=
+           std::string::npos);
+    assert(estop_transport->writtenString().size() > schema_only.size());
 
     FacadeHarness heartbeat_harness;
     heartbeat_harness.configure();
     fakes::FakeTransport* heartbeat_transport = heartbeat_harness.acceptFirstSession();
-    const std::string heartbeat_schema_only = heartbeat_transport->writtenString();
     heartbeat_transport->scriptInboundBytes(
         "{\"type\":\"heartbeat\",\"seq\":7,\"source\":\"controller\",\"target\":\"board\"}\n");
     heartbeat_harness.server.service();
-    assert(heartbeat_harness.server.counters().heartbeat_ack_sent == 0);
-    assert(heartbeat_transport->writtenString() == heartbeat_schema_only);
+    assert(heartbeat_harness.server.counters().heartbeat_received == 1);
+    assert(heartbeat_harness.server.counters().heartbeat_ack_sent == 1);
+    assert(heartbeat_transport->writtenString().find(
+               "{\"type\":\"heartbeat\",\"seq\":7,\"source\":\"board\","
+               "\"target\":\"controller\"}\n") != std::string::npos);
 }
 
 void routingAndCounterOwnership() {
@@ -511,7 +515,7 @@ void sendFailureTeardownBeforeReturnAndDefaultStubsFailClosed() {
 
 int main() {
     facadeSealsAndFailedStartLeavesMutable();
-    facadeServicePumpIsExplicitlyFailClosedForPhase7Routes();
+    facadeServicePumpHandlesSafetyAndHeartbeatRoutes();
     routingAndCounterOwnership();
     recoverableCommandErrorAndFailClosedCommandStub();
     teardownBarrierWaitsForReleaseAndCancelsBeforeAbort();

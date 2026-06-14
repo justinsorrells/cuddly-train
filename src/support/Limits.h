@@ -89,6 +89,9 @@ constexpr std::size_t kMaxFieldNameBytes = 48;
 constexpr std::size_t kMaxTelemetryFields = 24;
 constexpr std::size_t kMaxStateFields = 24;
 
+// §20: board-local e-stop reasons are copied into fixed storage.
+constexpr std::size_t kEstopTriggeredReasonMaxBytes = 160;
+
 // §15, §16.1, §18.3: all protocol seq values use uint64_t.
 using Seq = std::uint64_t;
 

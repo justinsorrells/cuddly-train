@@ -21,6 +21,18 @@ public:
         ++pending_connections_;
     }
 
+    void scriptBeginResult(bool result) {
+        begin_script_.push_back(result);
+    }
+
+    void stopAcceptingWritesOnNextConnection() {
+        next_connection_stops_writes_ = true;
+    }
+
+    void linkDownOnNextConnection() {
+        next_connection_link_down_ = true;
+    }
+
     void forceNextGeneration(std::uint8_t slot, std::uint32_t generation) {
         if (slot >= slots_.size() || slots_[slot].active) {
             return;
@@ -47,6 +59,12 @@ public:
 
     bool begin(std::uint16_t port) override {
         listen_port_ = port;
+        if (!begin_script_.empty()) {
+            const bool result = begin_script_.front();
+            begin_script_.pop_front();
+            listening_ = result;
+            return result;
+        }
         listening_ = true;
         return true;
     }
@@ -70,6 +88,14 @@ public:
             slot.generation = 1U;
         }
         slot.transport.resetForConnection();
+        if (next_connection_stops_writes_) {
+            slot.transport.stopAcceptingWrites();
+            next_connection_stops_writes_ = false;
+        }
+        if (next_connection_link_down_) {
+            slot.transport.scriptLinkDown();
+            next_connection_link_down_ = false;
+        }
         slot.active = true;
         --pending_connections_;
         return core::ConnectionHandle{static_cast<std::uint8_t>(slot_index), slot.generation};
@@ -183,6 +209,7 @@ private:
 
     std::array<Slot, core::NetworkServer::kConnectionSlotCount> slots_{};
     std::deque<core::NetworkAvailability> availability_script_;
+    std::deque<bool> begin_script_;
     FakeClock* progress_clock_ = nullptr;
     std::uint64_t progress_clock_step_ms_ = 0;
     core::NetworkAvailability availability_ = core::NetworkAvailability::Uninitialized;
@@ -192,6 +219,8 @@ private:
     std::size_t abort_count_ = 0U;
     std::uint16_t listen_port_ = 0U;
     bool listening_ = false;
+    bool next_connection_stops_writes_ = false;
+    bool next_connection_link_down_ = false;
 };
 
 }  // namespace teensy_command_server::host::fakes

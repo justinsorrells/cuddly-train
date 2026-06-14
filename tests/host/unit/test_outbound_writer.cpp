@@ -16,16 +16,15 @@ using teensy_command_server::core::Counters;
 using teensy_command_server::core::MessageClass;
 using teensy_command_server::core::OutboundSendResult;
 using teensy_command_server::core::OutboundWriter;
-using teensy_command_server::core::SessionDriver;
 using teensy_command_server::core::SessionTeardownReason;
 using teensy_command_server::host::fakes::FakeClock;
 using teensy_command_server::host::fakes::FakeNetworkServer;
 using teensy_command_server::host::fakes::FakeTransport;
 namespace limits = teensy_command_server::support;
 
-class FakeSessionDriver final : public SessionDriver {
+class FakeTeardownSink final {
 public:
-    void requestTeardown(SessionTeardownReason reason) override {
+    void requestTeardown(SessionTeardownReason reason) {
         ++request_count_;
         last_reason_ = reason;
     }
@@ -62,7 +61,7 @@ struct Harness {
     FakeClock clock;
     FakeNetworkServer server;
     Counters counters;
-    FakeSessionDriver session_driver;
+    FakeTeardownSink session_driver;
     teensy_command_server::core::ConnectionHandle handle{};
     FakeTransport* transport = nullptr;
 };

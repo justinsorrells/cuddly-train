@@ -50,6 +50,9 @@ constexpr std::uint32_t kHookBudgetMs = 100;
 // §8.4: controller registration window; informational for schema-first tests.
 constexpr std::uint32_t kRegistrationWindowMs = 2000;
 
+// §26.1: local network initialization retry interval; internal, not API.
+constexpr std::uint32_t kNetworkInitRetryMs = 1000;
+
 // §5.1, §14: registry is immutable after startup; full schema must fit 8192 bytes.
 constexpr std::size_t kMaxRegisteredCommands = 16;
 

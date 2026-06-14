@@ -28,7 +28,7 @@ public:
           clock_(&clock),
           counters_(&counters),
           registry_(&registry),
-          identity_(&identity),
+          identity_(identity),
           schema_builder_(&schema_builder),
           controller_loss_hook_(controller_loss_hook),
           controller_loss_context_(controller_loss_context),
@@ -174,7 +174,7 @@ public:
 private:
     bool configured() const {
         return network_ != nullptr && clock_ != nullptr && counters_ != nullptr &&
-               registry_ != nullptr && identity_ != nullptr && schema_builder_ != nullptr &&
+               registry_ != nullptr && schema_builder_ != nullptr &&
                framer_ready_;
     }
 
@@ -249,7 +249,7 @@ private:
 
         char schema_line[support::kSchemaJsonBufferBytes]{};
         const api::Status schema_status = SchemaBuilder::buildSchemaLine(
-            *registry_, *identity_, *clock_, schema_line, sizeof(schema_line));
+            *registry_, identity_, *clock_, schema_line, sizeof(schema_line));
         if (!schema_status.ok()) {
             requestTeardown(TeardownReason::SchemaSendFailure);
             applyPendingTeardown();
@@ -345,7 +345,7 @@ private:
     Clock* clock_ = nullptr;
     Counters* counters_ = nullptr;
     const CommandRegistry* registry_ = nullptr;
-    const api::BoardIdentity* identity_ = nullptr;
+    api::BoardIdentity identity_{};
     SchemaBuilder* schema_builder_ = nullptr;
     api::SafetyHook controller_loss_hook_ = nullptr;
     void* controller_loss_context_ = nullptr;

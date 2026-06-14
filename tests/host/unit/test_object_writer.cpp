@@ -2,8 +2,10 @@
 #include "support/Limits.h"
 
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 
 namespace api = teensy_command_server::api;
 namespace support = teensy_command_server::support;
@@ -27,9 +29,22 @@ static void testObjectWriterBasicShape() {
 static void testBoardProcUsRejected() {
     api::ObjectWriter writer;
     assert(!writer.addInt("board_proc_us", 42));
+    assert(!writer.addUInt64("board_proc_us", 42));
     assert(writer.addInt("ok", 1));
     assert(writer.close());
     assert(std::strcmp(writer.data(), "{\"ok\":1}") == 0);
+}
+
+static void testUInt64CoversFullWidth() {
+    api::ObjectWriter writer;
+    assert(writer.addUInt64("low", 0));
+    assert(writer.addUInt64("above_i32", 2147483648ULL));
+    assert(writer.addUInt64("max", std::numeric_limits<std::uint64_t>::max()));
+    assert(writer.close());
+
+    assert(std::strstr(writer.data(), "\"low\":0") != nullptr);
+    assert(std::strstr(writer.data(), "\"above_i32\":2147483648") != nullptr);
+    assert(std::strstr(writer.data(), "\"max\":18446744073709551615") != nullptr);
 }
 
 static void testCapacityIsEnvelopeReserved() {
@@ -63,6 +78,7 @@ static void testCapacityIsEnvelopeReserved() {
 int main() {
     testObjectWriterBasicShape();
     testBoardProcUsRejected();
+    testUInt64CoversFullWidth();
     testCapacityIsEnvelopeReserved();
 
     std::puts("test_object_writer: ok");

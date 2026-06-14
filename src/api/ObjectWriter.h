@@ -20,6 +20,10 @@ public:
         return allowed(name) && writer_.addInt(name, value);
     }
 
+    bool addUInt64(const char* name, std::uint64_t value) {
+        return allowed(name) && writer_.addUInt64(name, value);
+    }
+
     bool addFloat(const char* name, float value) {
         return allowed(name) && writer_.addDouble(name, static_cast<double>(value));
     }

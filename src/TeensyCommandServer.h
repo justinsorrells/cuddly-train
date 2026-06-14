@@ -6,7 +6,9 @@
 #include "api/SafetyHooks.h"
 #include "api/ServerStatus.h"
 #include "api/TelemetryProvider.h"
+#include "core/CommandDispatcher.h"
 #include "core/CommandRegistry.h"
+#include "core/DiagnosticsCommand.h"
 #include "core/NetworkServer.h"
 #include "core/OutboundScheduler.h"
 #include "core/SchemaBuilder.h"
@@ -20,12 +22,14 @@ namespace teensy_command_server {
 
 class TeensyCommandServer {
 public:
-    TeensyCommandServer() : service_loop_(counters_, identity_, scheduler_, phase7Routes()) {}
+    TeensyCommandServer()
+        : service_loop_(counters_, identity_, scheduler_, facadeRoutes(this),
+                        static_cast<const core::Clock*>(nullptr)) {}
 
     TeensyCommandServer(core::NetworkServer& network, core::Clock& clock)
         : network_(&network),
           clock_(&clock),
-          service_loop_(counters_, identity_, scheduler_, phase7Routes()) {}
+          service_loop_(counters_, identity_, scheduler_, facadeRoutes(this), clock) {}
 
     ~TeensyCommandServer() {
         destroySessionDriver();
@@ -103,6 +107,14 @@ public:
         return registry_.setControllerLossHook(hook, context);
     }
 
+    api::Status enableCountersDiagnosticCommand() {
+        const api::Status result = core::DiagnosticsCommand::registerCommand(registry_, counters_);
+        if (result.ok()) {
+            counters_diagnostic_enabled_ = true;
+        }
+        return result;
+    }
+
     api::Status start() {
         if (!network_config_set_) {
             return status(api::StatusCode::InvalidConfiguration, "network config is required");
@@ -175,11 +187,25 @@ private:
         }
     }
 
-    static core::ServiceLoop::Routes phase7Routes() {
-        // Phase 7 owns the facade pump and scheduler only. Command response
-        // bytes, telemetry production, e-stop ack, and heartbeat ack are wired
-        // in later phases; empty routes are the explicit fail-closed stubs.
-        return {};
+    static bool routeCommand(const core::ParsedCommand& command,
+                             std::uint64_t parse_completed_us,
+                             void* context) {
+        auto* self = static_cast<TeensyCommandServer*>(context);
+        if (self == nullptr || !self->counters_diagnostic_enabled_ ||
+            !core::DiagnosticsCommand::isDiagnosticsCommand(command.command) ||
+            self->clock_ == nullptr) {
+            return true;
+        }
+        core::CommandDispatcher dispatcher(
+            self->counters_, self->registry_, self->identity_, *self->clock_, self->scheduler_);
+        return dispatcher.dispatch(command, parse_completed_us);
+    }
+
+    static core::ServiceLoop::Routes facadeRoutes(TeensyCommandServer* self) {
+        core::ServiceLoop::Routes routes;
+        routes.command_with_timing = routeCommand;
+        routes.context = self;
+        return routes;
     }
 
     core::NetworkServer* network_ = nullptr;
@@ -193,6 +219,7 @@ private:
                                        {0, 0, 0, 0}, {0, 0, 0, 0}};
     bool network_config_set_ = false;
     bool started_ = false;
+    bool counters_diagnostic_enabled_ = false;
     typename std::aligned_storage<sizeof(core::SessionDriver), alignof(core::SessionDriver)>::type
         session_storage_;
     core::SessionDriver* session_driver_ = nullptr;

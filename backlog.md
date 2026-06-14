@@ -1962,7 +1962,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Implement software e-stop, heartbeat, and the estop-trigger path
+* [x] Task: Implement software e-stop, heartbeat, and the estop-trigger path
   (Phase 12)
 
   ## Goal

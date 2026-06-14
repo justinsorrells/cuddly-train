@@ -1796,7 +1796,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Implement the counters diagnostic command (Phase 10)
+* [x] Task: Implement the counters diagnostic command (Phase 10)
 
   ## Goal
 

@@ -2091,7 +2091,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Implement the QNEthernet platform adapter (Phase 14)
+* [x] Task: Implement the QNEthernet platform adapter (Phase 14)
 
   ## Goal
 

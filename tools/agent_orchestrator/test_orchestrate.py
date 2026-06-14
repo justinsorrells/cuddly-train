@@ -336,6 +336,30 @@ max_limit = 100
         res = self.orchestrator.check_forbidden_patterns(diff, changed_files, "ordinary task")
         self.assertIn("STOP_HIGH_RISK_CHANGE", res)
 
+    def test_forbidden_patterns_ci_file(self):
+        diff = "enable teensy ci"
+        changed_files = [".github/workflows/ci.yml"]
+        # Blocked for an unrelated task...
+        res = self.orchestrator.check_forbidden_patterns(diff, changed_files, "ordinary task description")
+        self.assertEqual(res, "STOP_HIGH_RISK_CHANGE (Modified CI/deployment config)")
+        # ...but allowed when the task is explicitly about CI.
+        res_allowed = self.orchestrator.check_forbidden_patterns(
+            diff, changed_files, "Add the smoke and conformance sketches and enable Teensy CI"
+        )
+        self.assertIsNone(res_allowed)
+        # A "ci" substring inside an unrelated word must NOT open the gate.
+        res_circuit = self.orchestrator.check_forbidden_patterns(
+            diff, changed_files, "edit circuit diagram docs"
+        )
+        self.assertEqual(res_circuit, "STOP_HIGH_RISK_CHANGE (Modified CI/deployment config)")
+
+    def test_forbidden_patterns_ci_optin_does_not_cover_docker(self):
+        # The CI opt-in must not unlock container/package manifests.
+        diff = "enable ci"
+        changed_files = ["Dockerfile"]
+        res = self.orchestrator.check_forbidden_patterns(diff, changed_files, "enable teensy ci")
+        self.assertEqual(res, "STOP_HIGH_RISK_CHANGE (Modified CI/deployment config)")
+
     def test_forbidden_patterns_secrets(self):
         diff = '+api_key = "abc123xyz789SECRET"'
         changed_files = ["config.py"]

@@ -814,6 +814,14 @@ class Orchestrator:
         # 2. File edit permissions check
         task_allows_contracts = any(kw in task_desc.lower() for kw in ["allow editing contracts", "modify contracts", "edit contracts"])
         task_allows_skills = any(kw in task_desc.lower() for kw in ["allow modifying skills", "edit skills", "modify skills"])
+        # CI workflow edits are gated like contracts/skills: blocked unless the
+        # task's stated purpose is to touch CI. The verb+\bci\b form keeps words
+        # like "circuit" from opening the gate; distinctive phrases (ci/cd, ci
+        # workflow, github actions/workflow) match on their own.
+        task_allows_ci = bool(re.search(
+            r"(enable|modify|edit|update|change|add)\s+(the\s+)?(teensy\s+)?ci\b"
+            r"|ci\s*/\s*cd|ci workflow|github actions?|github workflow",
+            task_desc.lower()))
 
         for f in changed_files:
             if f.startswith("docs/contracts/"):
@@ -827,8 +835,14 @@ class Orchestrator:
             if f.startswith(".agents/skills/") or f == "AGENTS.md":
                 if not task_allows_skills:
                     return "STOP_HIGH_RISK_CHANGE (Modified AGENTS.md or skills without permission)"
-            # CI/CD or config file updates
-            if f.startswith(".github/") or f in ["Dockerfile", "docker-compose.yml", "package.json"]:
+            # CI workflow edits may be explicitly authorized by the task
+            # (mirrors the contracts/skills opt-in above).
+            if f.startswith(".github/"):
+                if not task_allows_ci:
+                    return "STOP_HIGH_RISK_CHANGE (Modified CI/deployment config)"
+            # Container/package manifests have no legitimate use in this
+            # firmware repo; never auto-approve them.
+            elif f in ["Dockerfile", "docker-compose.yml", "package.json"]:
                 return "STOP_HIGH_RISK_CHANGE (Modified CI/deployment config)"
             # Dependencies modification
             if f in ["requirements.txt", "Pipfile", "poetry.lock", "platformio.ini", "library.json", "library.properties"]:

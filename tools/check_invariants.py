@@ -63,6 +63,17 @@ CONTROLLER_OWNED_CODES = re.compile(
 ERRORS: list[str] = []
 WARNINGS: list[str] = []
 
+FACADE_REQUIRED_ROUTES = (
+    "command_with_timing",
+    "estop_with_result",
+    "heartbeat_with_result",
+    "safety_due",
+    "outbound_outcome",
+    "telemetry_due",
+    "telemetry_inactive",
+    "context",
+)
+
 
 def rel(path: Path) -> str:
     return str(path.relative_to(REPO_ROOT))
@@ -151,8 +162,34 @@ def check_skill_consistency() -> None:
                 )
 
 
+def check_facade_routes() -> None:
+    """Guard against public-facade route omissions that unit tests can miss."""
+    header = REPO_ROOT / "src" / "TeensyCommandServer.h"
+    if not header.exists():
+        ERRORS.append("src/TeensyCommandServer.h: missing facade header")
+        return
+    text = header.read_text(encoding="utf-8")
+    match = re.search(
+        r"static\s+core::ServiceLoop::Routes\s+facadeRoutes"
+        r"\([^)]*\)\s*\{(?P<body>.*?)\n\s*\}",
+        text,
+        flags=re.DOTALL,
+    )
+    if not match:
+        ERRORS.append("src/TeensyCommandServer.h: facadeRoutes() not found")
+        return
+    body = match.group("body")
+    for route in FACADE_REQUIRED_ROUTES:
+        if f"routes.{route}" not in body:
+            ERRORS.append(
+                f"src/TeensyCommandServer.h: facadeRoutes() does not wire "
+                f"ServiceLoop::Routes::{route}"
+            )
+
+
 def main() -> int:
     check_skill_consistency()
+    check_facade_routes()
     for path in iter_files():
         check_file(path)
 

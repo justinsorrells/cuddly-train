@@ -306,6 +306,9 @@ private:
         for (std::size_t i = 0; i < batch.count(); ++i) {
             routeOutcome(batch.at(i));
         }
+        if (routes_.telemetry_inactive != nullptr) {
+            routes_.telemetry_inactive(routes_.context);
+        }
         session.applyPendingTeardown();
     }
 

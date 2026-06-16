@@ -31,11 +31,11 @@ struct FixtureState {
 };
 
 api::NetworkConfig network_config{
-    api::NetworkConfig::Mode::StaticIpv4,
+    api::NetworkConfig::Mode::Dhcp,
     kListenPort,
-    {192, 168, 10, 3},
-    {192, 168, 10, 1},
-    {255, 255, 255, 0},
+    {0, 0, 0, 0},
+    {0, 0, 0, 0},
+    {0, 0, 0, 0},
 };
 
 // Static IPv4 example:
@@ -189,21 +189,6 @@ void fillLargePayload() {
     fixture.large_payload[kLargePayloadBytes] = '\0';
 }
 
-// Demo: a command added live to show schema-driven UI updates after a reflash.
-api::CommandResult testSum(const api::CommandContext& command,
-                           api::ObjectWriter& result,
-                           void*) {
-    std::int32_t a = 0;
-    std::int32_t b = 0;
-    if (!command.args.getInt("a", a) || !command.args.getInt("b", b)) {
-        return api::CommandResult::invalidType("a and b must be ints");
-    }
-    if (!result.addInt("sum", a + b)) {
-        return api::CommandResult::internalError("sum result overflow");
-    }
-    return api::CommandResult::ok();
-}
-
 void registerCommands() {
     const api::ArgumentSpec echo_args[]{{"value", api::ValueType::Int}};
     const api::CommandSpec echo_spec{"test_echo", echo_args, 1, false};
@@ -231,10 +216,6 @@ void registerCommands() {
 
     const api::CommandSpec trigger_spec{"test_trigger_estop", nullptr, 0, false};
     (void)server.registerCommand(trigger_spec, testTriggerEstop, &fixture);
-
-    const api::ArgumentSpec sum_args[]{{"a", api::ValueType::Int}, {"b", api::ValueType::Int}};
-    const api::CommandSpec sum_spec{"test_sum", sum_args, 2, false};
-    (void)server.registerCommand(sum_spec, testSum, nullptr);
 }
 
 void setup() {

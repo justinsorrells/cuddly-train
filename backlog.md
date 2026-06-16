@@ -2220,7 +2220,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Audit + harden the Phase-16 demo firmware changes (post-demo cleanup)
+* [x] Task: Audit + harden the Phase-16 demo firmware changes (post-demo cleanup)
 
   ## Context
 

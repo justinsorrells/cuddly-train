@@ -2220,7 +2220,98 @@ existing states and edges.
 
 ---
 
-* [ ] Task: OPERATOR GATE — actual-controller vertical-slice integration (Phase 16)
+* [ ] Task: Audit + harden the Phase-16 demo firmware changes (post-demo cleanup)
+
+  ## Context
+
+  A fast operator-run Phase-16 demo (2026-06-14/15) reached live interop but
+  required two firmware fixes made under time pressure. This task is a thorough,
+  unrushed audit of everything changed and thought about on the **firmware/library
+  side**, plus the integration-test coverage that would have caught the bugs
+  before hardware. Full session record:
+  `tests/hardware/results/2026-06-14-phase16-interop/INTEGRATION_BRIEF.md` and
+  `SESSION_AUDIT.md` (read both first).
+
+  ## Why this matters
+
+  Both demo bugs were **facade-wiring** defects in `src/TeensyCommandServer.h`
+  (telemetry never pushed; only `get_counters` dispatched). The inner components
+  were correct and unit-tested, but **no host test exercised a registered command
+  or telemetry through the public facade `service()` path**, so the suite was green
+  while real interop was broken. The audit must close that altitude gap, not just
+  re-check the diff.
+
+  ## Audit scope (review every change for correctness, not just "it passes")
+
+  * `src/TeensyCommandServer.h`:
+    - `TelemetryScheduler` member wired via placement-new in `start()`: review
+      lifetime/ownership vs `session_driver_`, the dtor/`destroyTelemetryScheduler`
+      ordering, provider/identity/clock reference validity, and behavior across
+      reconnect / `onSessionInactive` / re-`start()`.
+    - `routeCommand` now always dispatches: confirm teardown happens **only** on a
+      genuine critical transmit failure (dispatcher returns true only when
+      `enqueueCritical != Queued`); confirm removal of `counters_diagnostic_enabled_`
+      left no dead/contradictory state.
+    - Confirm no per-message dynamic allocation was introduced (the dispatcher is
+      stack-constructed per command — verify against the fixed-capacity invariant).
+  * `tests/host/unit/test_service_loop.cpp`: this is the **one test changed to make
+    the suite pass**. Independently verify the new assertions describe
+    contract-correct behavior (dispatch + correlated response, no teardown; first
+    telemetry frame is the liveness signal; unknown → `UNKNOWN_COMMAND`), not
+    behavior fitted to the new code. Cross-check `CommandDispatcher.dispatch`
+    semantics and the § contract command-dispatch rules.
+  * Sketch (`sketches/command_server_conformance/command_server_conformance.ino`):
+    the demo left a **bench static IP** and a demo command **`test_sum`** in a
+    Phase-17 contract fixture. Decide and execute: revert the static IP (commit
+    default is DHCP), and either remove `test_sum`, or move the
+    "register-a-command" demo into a dedicated demo sketch so the conformance
+    fixture's schema stays canonical. Re-run Phase-17 expectations after any change.
+
+  ## New integration coverage to add (the real gap)
+
+  * Host-level **facade integration tests** that drive `TeensyCommandServer.service()`
+    end to end (the layer the unit tests skipped): a registered command produces a
+    correlated response without teardown; telemetry is pushed on the 50 ms schedule
+    and resumes after a session replacement; `estop`→`estop_ack`; `get_counters`;
+    unknown/bad-arg paths; oversized response/telemetry; provider-failure telemetry.
+    Treat "schema sent but no telemetry/command-response follows" as a regression
+    oracle.
+  * A guard/invariant (check_invariants or a test) that **every `ServiceLoop::Routes`
+    field the facade is expected to wire is non-null after construction**, so a
+    future missing-route regression fails loudly.
+  * Firmware robustness for the **single-client session wedge** observed on hardware
+    (controller⇄board TCP half-open ~116 s, board stuck not re-serving until an
+    external connection forced replacement): review QNEthernet/`SessionDriver`
+    handling of half-open / stale peers and rapid reconnect churn; add a
+    self-recovery path and a host test that simulates a half-open/abandoned peer.
+
+  ## Hardware (operator-run; the full rig is available)
+
+  * Reflash `command_server_conformance` and run the Phase-17 conformance client +
+    the §28/§29 checklist; record under `tests/hardware/results/` with toolchain
+    versions. NB: the demo ran on **arduino-cli 1.5.0 / teensy core 1.60.0**, which
+    deviate from the Build/Flash pins (1.3.1 / 1.59.0) — rerun on pinned toolchain
+    before any §31 claims.
+  * Stress the session layer: rapid connect/disconnect churn, telemetry-stall →
+    liveness, reconnect storms; confirm no wedge and bounded recovery.
+
+  ## Do not
+
+  * Edit `docs/contracts/` or claim §31/freeze results (that's Phase 18).
+
+  ## Validation
+
+  ```bash
+  python3 tools/check_invariants.py
+  python3 tools/check_contract_sync.py
+  ./tools/run_host_tests.sh
+  ./tools/build_teensy.sh
+  ```
+  plus the recorded operator hardware run.
+
+---
+
+* [x] Task: OPERATOR GATE — actual-controller vertical-slice integration (Phase 16)
 
   ## Goal
 
@@ -2345,3 +2436,4 @@ existing states and edges.
 
   The standard four commands plus the recorded hardware conformance run
   (operator-run; never simulated).
+

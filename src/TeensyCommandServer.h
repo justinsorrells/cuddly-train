@@ -16,6 +16,7 @@
 #include "core/SchemaBuilder.h"
 #include "core/ServiceLoop.h"
 #include "core/SessionDriver.h"
+#include "core/TelemetryScheduler.h"
 
 #include <new>
 #include <type_traits>
@@ -35,6 +36,7 @@ public:
 
     ~TeensyCommandServer() {
         destroySessionDriver();
+        destroyTelemetryScheduler();
     }
 
     api::Status setIdentity(const api::BoardIdentity& identity) {
@@ -110,11 +112,7 @@ public:
     }
 
     api::Status enableCountersDiagnosticCommand() {
-        const api::Status result = core::DiagnosticsCommand::registerCommand(registry_, counters_);
-        if (result.ok()) {
-            counters_diagnostic_enabled_ = true;
-        }
-        return result;
+        return core::DiagnosticsCommand::registerCommand(registry_, counters_);
     }
 
     api::Status requestEstopTriggered(const char* reason) {
@@ -143,6 +141,10 @@ public:
         started_ = true;
         if (network_ != nullptr && clock_ != nullptr) {
             const core::CommandRegistry::StoredHook hook = registry_.controllerLossHook();
+            const core::CommandRegistry::StoredProvider telemetry = registry_.telemetryProvider();
+            destroyTelemetryScheduler();
+            telemetry_scheduler_ = new (&telemetry_storage_) core::TelemetryScheduler(
+                counters_, identity_, *clock_, telemetry.fn, telemetry.context);
             destroySessionDriver();
             session_driver_ = new (&session_storage_) core::SessionDriver(*network_,
                                                                           *clock_,
@@ -193,15 +195,24 @@ private:
         }
     }
 
+    void destroyTelemetryScheduler() {
+        if (telemetry_scheduler_ != nullptr) {
+            telemetry_scheduler_->~TelemetryScheduler();
+            telemetry_scheduler_ = nullptr;
+        }
+    }
+
     static bool routeCommand(const core::ParsedCommand& command,
                              std::uint64_t parse_completed_us,
                              void* context) {
         auto* self = static_cast<TeensyCommandServer*>(context);
-        if (self == nullptr || !self->counters_diagnostic_enabled_ ||
-            !core::DiagnosticsCommand::isDiagnosticsCommand(command.command) ||
-            self->clock_ == nullptr) {
+        if (self == nullptr || self->clock_ == nullptr) {
             return true;
         }
+        // CommandDispatcher resolves every registered command through the
+        // registry (including the get_counters diagnostic, which
+        // enableCountersDiagnosticCommand() registers there). Unknown commands
+        // become an UNKNOWN_COMMAND error response, not a session teardown.
         core::CommandDispatcher dispatcher(
             self->counters_, self->registry_, self->identity_, *self->clock_, self->scheduler_);
         return dispatcher.dispatch(command, parse_completed_us);
@@ -243,6 +254,22 @@ private:
         self->estop_handler_.onOutboundOutcome(outcome, self->scheduler_);
     }
 
+    static void routeTelemetryDue(core::OutboundScheduler& scheduler, void* context) {
+        auto* self = static_cast<TeensyCommandServer*>(context);
+        if (self == nullptr || self->telemetry_scheduler_ == nullptr) {
+            return;
+        }
+        self->telemetry_scheduler_->service(scheduler);
+    }
+
+    static void routeTelemetryInactive(void* context) {
+        auto* self = static_cast<TeensyCommandServer*>(context);
+        if (self == nullptr || self->telemetry_scheduler_ == nullptr) {
+            return;
+        }
+        self->telemetry_scheduler_->onSessionInactive();
+    }
+
     static core::ServiceLoop::Routes facadeRoutes(TeensyCommandServer* self) {
         core::ServiceLoop::Routes routes;
         routes.command_with_timing = routeCommand;
@@ -250,6 +277,8 @@ private:
         routes.heartbeat_with_result = routeHeartbeat;
         routes.safety_due = routeSafetyDue;
         routes.outbound_outcome = routeOutboundOutcome;
+        routes.telemetry_due = routeTelemetryDue;
+        routes.telemetry_inactive = routeTelemetryInactive;
         routes.context = self;
         return routes;
     }
@@ -267,10 +296,13 @@ private:
                                        {0, 0, 0, 0}, {0, 0, 0, 0}};
     bool network_config_set_ = false;
     bool started_ = false;
-    bool counters_diagnostic_enabled_ = false;
     typename std::aligned_storage<sizeof(core::SessionDriver), alignof(core::SessionDriver)>::type
         session_storage_;
     core::SessionDriver* session_driver_ = nullptr;
+    typename std::aligned_storage<sizeof(core::TelemetryScheduler),
+                                  alignof(core::TelemetryScheduler)>::type
+        telemetry_storage_;
+    core::TelemetryScheduler* telemetry_scheduler_ = nullptr;
     core::ServiceLoop service_loop_;
 };
 

@@ -1,0 +1,19 @@
+
+=== BULLET 1: schema-first registration (controller view) ===
+  board: {"board_id": "command_server_conformance", "conn_state": "REGISTERED", "available": true, "protocol_version": "1", "firmware_version": "0.1.0", "schema_revision": 1}
+
+=== BULLET 2: Unix-socket command -> controller -> Teensy -> response ===
+  response: {"type": "response", "seq": 1001, "controller_ts": 154792.406746916, "source": "controller", "target": "phase16_demo", "status": "ok", "result": {"value": 42, "board_proc_us": 10, "board_seq": 1, "latency_ms": 0.890750001417473}, "error": null}
+
+=== BULLET 3: telemetry to controller (see proxy 'B->C telemetry' frames); hold 2s ===
+  still REGISTERED under 0.25s liveness: {"conn_state": "REGISTERED"}
+
+=== BULLET 5: software e-stop (see proxy estop_triggered -> estop -> estop_ack) ===
+  trigger response: {"type": "response", "seq": 1003, "controller_ts": 154794.41140179103, "source": "controller", "target": "phase16_demo", "status": "ok", "result": {"queued": true, "board_proc_us": 8, "board_seq": 2, "latency_ms": 1.633167004911229}, "error": null}
+  estop_reset response: {"type": "response", "seq": 1004, "source": "controller", "target": "phase16_demo", "status": "ok", "result": {"estop_active": false}, "error": null}
+
+=== BULLET 4: disconnect/reconnect + schema re-registration ===
+  schema_revision before: 1
+  re-registered: {"conn_state": "REGISTERED", "schema_revision": 1}
+
+=== ALL FIVE PHASE-16 BULLETS EXERCISED ===

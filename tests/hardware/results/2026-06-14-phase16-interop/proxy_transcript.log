@@ -1,0 +1,69 @@
+proxy listening on 127.0.0.1:5052 -> 192.168.10.3:5051
+[  1.03s] controller connected; dialing board ('192.168.10.3', 5051)
+[  1.03s] B->C schema: {"type": "schema", "seq": 1, "timestamp": 362933, "source": "command_server_conformance", "target": "controller", "protocol_version": "1", "schema": {"commands": {"test_echo": {"args": {"value": "int"}, "blocked_by_estop": false}, "test_oversized_result": {"args": {}, "blocked_by_estop": false}, "test_estop_success": {"args": {}, "blocked_by_estop": false}, "test_estop_fail": {"args": {}, "blocked_by_estop": false}, "test_estop_over_budget": {"args": {}, "blocked_by_estop": false}, "test_loss_over_budget": {"args": {"enabled": "bool"}, "blocked_by_estop": false}, "test_telemetry_mode": {"args": {"mode": "int"}, "blocked_by_estop": false}, "test_trigger_estop": {"args": {}, "blocked_by_estop": false}, "get_counters": {"args": {}, "blocked_by_estop": false}}, "telemetry": {"echo_value": "int", "telemetry_mode": "int", "overflow_payload": "string"}, "state": {}, "firmware_version": "0.1.0"}}
+[  1.03s] B->C telemetry (frame #1) {"echo_value": 42, "telemetry_mode": 0}
+[  2.03s] B->C telemetry (frame #21) {"echo_value": 42, "telemetry_mode": 0}
+[  3.03s] C->B command: {"type": "command", "seq": 1, "controller_ts": 154792.406746916, "source": "controller", "target": "command_server_conformance", "command": "test_echo", "args": {"value": 42}}
+[  3.03s] B->C response: {"type": "response", "seq": 1, "controller_ts": 154792.406746916, "timestamp": 364931, "source": "command_server_conformance", "target": "controller", "status": "ok", "result": {"value": 42, "board_proc_us": 10}, "error": null}
+[  3.03s] B->C telemetry (frame #41) {"echo_value": 42, "telemetry_mode": 0}
+[  4.03s] B->C telemetry (frame #61) {"echo_value": 42, "telemetry_mode": 0}
+[  5.03s] B->C telemetry (frame #81) {"echo_value": 42, "telemetry_mode": 0}
+[  5.03s] C->B command: {"type": "command", "seq": 2, "controller_ts": 154794.411401791, "source": "controller", "target": "command_server_conformance", "command": "test_trigger_estop", "args": {}}
+[  5.03s] B->C response: {"type": "response", "seq": 2, "controller_ts": 154794.41140179103, "timestamp": 366936, "source": "command_server_conformance", "target": "controller", "status": "ok", "result": {"queued": true, "board_proc_us": 8}, "error": null}
+[  5.03s] B->C event:estop_triggered: {"type": "event", "timestamp": 366936, "source": "command_server_conformance", "target": "controller", "event": "estop_triggered", "details": {"reason": "fixture_requested"}}
+[  5.03s] C->B estop: {"type": "estop", "source": "controller", "target": "command_server_conformance"}
+[  5.03s] B->C event:estop_ack: {"type": "event", "timestamp": 366938, "source": "command_server_conformance", "target": "controller", "event": "estop_ack", "details": {"state": "safe"}}
+[  6.03s] B->C telemetry (frame #101) {"echo_value": 42, "telemetry_mode": 0}
+[  6.55s] session closed (telemetry frames B->C=111)
+[  6.88s] controller connected; dialing board ('192.168.10.3', 5051)
+[  6.88s] B->C schema: {"type": "schema", "seq": 1, "timestamp": 368788, "source": "command_server_conformance", "target": "controller", "protocol_version": "1", "schema": {"commands": {"test_echo": {"args": {"value": "int"}, "blocked_by_estop": false}, "test_oversized_result": {"args": {}, "blocked_by_estop": false}, "test_estop_success": {"args": {}, "blocked_by_estop": false}, "test_estop_fail": {"args": {}, "blocked_by_estop": false}, "test_estop_over_budget": {"args": {}, "blocked_by_estop": false}, "test_loss_over_budget": {"args": {"enabled": "bool"}, "blocked_by_estop": false}, "test_telemetry_mode": {"args": {"mode": "int"}, "blocked_by_estop": false}, "test_trigger_estop": {"args": {}, "blocked_by_estop": false}, "get_counters": {"args": {}, "blocked_by_estop": false}}, "telemetry": {"echo_value": "int", "telemetry_mode": "int", "overflow_payload": "string"}, "state": {}, "firmware_version": "0.1.0"}}
+[  7.38s] B->C telemetry (frame #121) {"echo_value": 42, "telemetry_mode": 0}
+[  8.38s] B->C telemetry (frame #141) {"echo_value": 42, "telemetry_mode": 0}
+[  9.38s] B->C telemetry (frame #161) {"echo_value": 42, "telemetry_mode": 0}
+[ 10.38s] B->C telemetry (frame #181) {"echo_value": 42, "telemetry_mode": 0}
+[ 11.38s] B->C telemetry (frame #201) {"echo_value": 42, "telemetry_mode": 0}
+[ 12.38s] B->C telemetry (frame #221) {"echo_value": 42, "telemetry_mode": 0}
+[ 13.38s] B->C telemetry (frame #241) {"echo_value": 42, "telemetry_mode": 0}
+[ 14.38s] B->C telemetry (frame #261) {"echo_value": 42, "telemetry_mode": 0}
+[ 15.38s] B->C telemetry (frame #281) {"echo_value": 42, "telemetry_mode": 0}
+[ 16.38s] B->C telemetry (frame #301) {"echo_value": 42, "telemetry_mode": 0}
+[ 17.38s] B->C telemetry (frame #321) {"echo_value": 42, "telemetry_mode": 0}
+[ 18.38s] B->C telemetry (frame #341) {"echo_value": 42, "telemetry_mode": 0}
+[ 19.38s] B->C telemetry (frame #361) {"echo_value": 42, "telemetry_mode": 0}
+[ 20.38s] B->C telemetry (frame #381) {"echo_value": 42, "telemetry_mode": 0}
+[ 21.38s] B->C telemetry (frame #401) {"echo_value": 42, "telemetry_mode": 0}
+[ 22.38s] B->C telemetry (frame #421) {"echo_value": 42, "telemetry_mode": 0}
+[ 23.38s] B->C telemetry (frame #441) {"echo_value": 42, "telemetry_mode": 0}
+[ 24.38s] B->C telemetry (frame #461) {"echo_value": 42, "telemetry_mode": 0}
+[ 25.38s] B->C telemetry (frame #481) {"echo_value": 42, "telemetry_mode": 0}
+[ 26.38s] B->C telemetry (frame #501) {"echo_value": 42, "telemetry_mode": 0}
+[ 27.38s] B->C telemetry (frame #521) {"echo_value": 42, "telemetry_mode": 0}
+[ 28.38s] B->C telemetry (frame #541) {"echo_value": 42, "telemetry_mode": 0}
+[ 29.38s] B->C telemetry (frame #561) {"echo_value": 42, "telemetry_mode": 0}
+[ 30.38s] B->C telemetry (frame #581) {"echo_value": 42, "telemetry_mode": 0}
+[ 31.38s] B->C telemetry (frame #601) {"echo_value": 42, "telemetry_mode": 0}
+[ 32.38s] B->C telemetry (frame #621) {"echo_value": 42, "telemetry_mode": 0}
+[ 33.38s] B->C telemetry (frame #641) {"echo_value": 42, "telemetry_mode": 0}
+[ 34.38s] B->C telemetry (frame #661) {"echo_value": 42, "telemetry_mode": 0}
+[ 35.38s] B->C telemetry (frame #681) {"echo_value": 42, "telemetry_mode": 0}
+[ 36.38s] B->C telemetry (frame #701) {"echo_value": 42, "telemetry_mode": 0}
+[ 37.38s] B->C telemetry (frame #721) {"echo_value": 42, "telemetry_mode": 0}
+[ 38.38s] B->C telemetry (frame #741) {"echo_value": 42, "telemetry_mode": 0}
+[ 39.38s] B->C telemetry (frame #761) {"echo_value": 42, "telemetry_mode": 0}
+[ 40.38s] B->C telemetry (frame #781) {"echo_value": 42, "telemetry_mode": 0}
+[ 41.38s] B->C telemetry (frame #801) {"echo_value": 42, "telemetry_mode": 0}
+[ 42.38s] B->C telemetry (frame #821) {"echo_value": 42, "telemetry_mode": 0}
+[ 43.38s] B->C telemetry (frame #841) {"echo_value": 42, "telemetry_mode": 0}
+[ 44.38s] B->C telemetry (frame #861) {"echo_value": 42, "telemetry_mode": 0}
+[ 45.38s] B->C telemetry (frame #881) {"echo_value": 42, "telemetry_mode": 0}
+[ 46.38s] B->C telemetry (frame #901) {"echo_value": 42, "telemetry_mode": 0}
+[ 47.38s] B->C telemetry (frame #921) {"echo_value": 42, "telemetry_mode": 0}
+[ 48.38s] B->C telemetry (frame #941) {"echo_value": 42, "telemetry_mode": 0}
+[ 49.38s] B->C telemetry (frame #961) {"echo_value": 42, "telemetry_mode": 0}
+[ 50.38s] B->C telemetry (frame #981) {"echo_value": 42, "telemetry_mode": 0}
+[ 50.65s] session closed (telemetry frames B->C=986)
+[ 50.69s] controller connected; dialing board ('192.168.10.3', 5051)
+[ 50.70s] B->C schema: {"type": "schema", "seq": 1, "timestamp": 412601, "source": "command_server_conformance", "target": "controller", "protocol_version": "1", "schema": {"commands": {"test_echo": {"args": {"value": "int"}, "blocked_by_estop": false}, "test_oversized_result": {"args": {}, "blocked_by_estop": false}, "test_estop_success": {"args": {}, "blocked_by_estop": false}, "test_estop_fail": {"args": {}, "blocked_by_estop": false}, "test_estop_over_budget": {"args": {}, "blocked_by_estop": false}, "test_loss_over_budget": {"args": {"enabled": "bool"}, "blocked_by_estop": false}, "test_telemetry_mode": {"args": {"mode": "int"}, "blocked_by_estop": false}, "test_trigger_estop": {"args": {}, "blocked_by_estop": false}, "get_counters": {"args": {}, "blocked_by_estop": false}}, "telemetry": {"echo_value": "int", "telemetry_mode": "int", "overflow_payload": "string"}, "state": {}, "firmware_version": "0.1.0"}}
+[ 51.43s] B->C telemetry (frame #1001) {"echo_value": 42, "telemetry_mode": 0}
+[ 52.43s] B->C telemetry (frame #1021) {"echo_value": 42, "telemetry_mode": 0}
+[ 52.44s] session closed (telemetry frames B->C=1021)

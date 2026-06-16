@@ -244,20 +244,34 @@ void facadeServicePumpHandlesSafetyAndHeartbeatRoutes() {
     harness.configure();
     fakes::FakeTransport* transport = harness.acceptFirstSession();
 
+    // The first telemetry frame is pushed as soon as the session is active (it
+    // is the liveness signal), so the provider has already fired once and a
+    // telemetry line has been written after the schema.
+    assert(harness.telemetry_calls == 1);
+    assert(harness.server.counters().telemetry_sent == 1);
+    const std::string after_schema = transport->writtenString();
+    assert(after_schema.find("\"type\":\"telemetry\"") != std::string::npos);
+
+    // A registered command must reach its handler and return a correlated
+    // response without tearing the session down.
     transport->scriptInboundBytes(
         "{\"type\":\"command\",\"seq\":1,\"controller_ts\":1,\"source\":\"controller\","
         "\"target\":\"board\",\"command\":\"set_speed\",\"args\":{}}\n");
     harness.server.service();
-    assert(harness.command_calls == 0);
-    assert(harness.telemetry_calls == 0);
+    assert(harness.command_calls == 1);
     assert(harness.estop_calls == 0);
-    assert(harness.loss_calls == 1);
-    assert(harness.network.abortCount() == 1);
-    assert(harness.server.counters().controller_disconnects == 1);
-    assert(harness.server.counters().commands_ok == 0);
-    assert(harness.server.counters().telemetry_sent == 0);
+    assert(harness.loss_calls == 0);
+    assert(harness.network.abortCount() == 0);
+    assert(harness.server.counters().controller_disconnects == 0);
+    assert(harness.server.counters().commands_ok == 1);
+    assert(harness.server.counters().unknown_commands == 0);
     assert(harness.server.counters().estop_ack_sent == 0);
     assert(harness.server.counters().heartbeat_ack_sent == 0);
+    const std::string after_command = transport->writtenString();
+    assert(after_command.size() > after_schema.size());
+    assert(after_command.find("\"type\":\"response\"") != std::string::npos);
+    assert(after_command.find("\"seq\":1") != std::string::npos);
+    assert(after_command.find("\"status\":\"ok\"") != std::string::npos);
 
     FacadeHarness estop_harness;
     estop_harness.configure();
@@ -285,6 +299,24 @@ void facadeServicePumpHandlesSafetyAndHeartbeatRoutes() {
     assert(heartbeat_transport->writtenString().find(
                "{\"type\":\"heartbeat\",\"seq\":7,\"source\":\"board\","
                "\"target\":\"controller\"}\n") != std::string::npos);
+
+    // An unknown command is answered with an UNKNOWN_COMMAND error response,
+    // never a session teardown.
+    FacadeHarness unknown_harness;
+    unknown_harness.configure();
+    fakes::FakeTransport* unknown_transport = unknown_harness.acceptFirstSession();
+    unknown_transport->scriptInboundBytes(
+        "{\"type\":\"command\",\"seq\":9,\"controller_ts\":1,\"source\":\"controller\","
+        "\"target\":\"board\",\"command\":\"no_such_command\",\"args\":{}}\n");
+    unknown_harness.server.service();
+    assert(unknown_harness.command_calls == 0);
+    assert(unknown_harness.loss_calls == 0);
+    assert(unknown_harness.network.abortCount() == 0);
+    assert(unknown_harness.server.counters().unknown_commands == 1);
+    assert(unknown_harness.server.counters().commands_ok == 0);
+    assert(unknown_harness.server.counters().controller_disconnects == 0);
+    assert(unknown_transport->writtenString().find("\"status\":\"error\"") != std::string::npos);
+    assert(unknown_transport->writtenString().find("UNKNOWN_COMMAND") != std::string::npos);
 }
 
 void routingAndCounterOwnership() {

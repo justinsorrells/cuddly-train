@@ -1,0 +1,18 @@
+# Phase-16 interop demo config — operator runtime artifact (not committed).
+[controller]
+socket_path = "/tmp/hyperloop-controller.sock"
+
+[[boards]]
+id = "command_server_conformance"
+# Via the transparent logging proxy (127.0.0.1:5052 -> 192.168.10.3:5051).
+host = "127.0.0.1"
+port = 5052
+
+[observability]
+enabled = false
+
+# Liveness enabled with the contract default (telemetry is the liveness signal).
+# The board now pushes 50 ms telemetry, so the 0.25 s window holds.
+[liveness]
+enabled = true
+timeout_s = 0.25

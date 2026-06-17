@@ -2346,7 +2346,7 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Build the Python conformance client and harness (Phase 17)
+* [x] Task: Build the Python conformance client and harness (Phase 17)
 
   ## Goal
 

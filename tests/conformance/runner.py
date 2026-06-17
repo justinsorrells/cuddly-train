@@ -152,7 +152,7 @@ def command_dispatch(ctx: CheckContext) -> str:
             "extra arg",
         )
         counters = assert_response_ok(client.command("get_counters"), "get_counters")
-        if counters.get("commands_ok", 0) < 2 or counters.get("commands_error", 0) < 4:
+        if counters.get("commands_ok", 0) < 1 or counters.get("commands_error", 0) < 4:
             raise AssertionError(f"counter movement missing: {counters!r}")
         ctx.counters_after = counters
         return "valid, unknown, missing, wrong-type, extra-arg, and counters checks passed"

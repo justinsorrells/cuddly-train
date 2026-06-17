@@ -10,7 +10,7 @@ namespace api = teensy_command_server::api;
 namespace qnp = teensy_command_server::platform::qnethernet;
 
 constexpr std::uint16_t kListenPort = 5051;
-constexpr std::size_t kLargePayloadBytes = 7600;
+constexpr std::size_t kLargePayloadBytes = 8100;
 constexpr std::uint32_t kOverBudgetDelayMs = 150;
 
 enum class TelemetryMode : std::int32_t {

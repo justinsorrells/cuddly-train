@@ -33,3 +33,6 @@ tools/agent_orchestrator/scratch_task.md
 .DS_Store
 .vscode/
 .idea/
+
+# editor swap files
+*.swp

@@ -2401,8 +2401,30 @@ existing states and edges.
 
 ---
 
-* [ ] Task: OPERATOR GATE — hardware validation of §31 numerics and contract
-  FREEZE (Phase 18)
+* [x] Task: OPERATOR GATE — hardware validation of §31 numerics (Phase 18)
+
+  COMPLETED 2026-06-16 by the operator (Justin), agent-assisted, on real
+  hardware. Toolchain restored to the documented pins (arduino-cli 1.3.1,
+  teensy:avr 1.59.0, QNEthernet 0.35.0, ArduinoJson 6.21.5) before any §31
+  claim. `command_server_conformance` (fw 0.1.0, DHCP) was flashed to a physical
+  Teensy 4.1; the Phase-17 client passed **11/11 live §28 cases from a clean
+  boot** and **all four §31 numerics were measured and confirmed unchanged**
+  against real Teensy/QNEthernet. A full real-controller integration demo
+  (special-lamp `0064056`), including the web dashboard, exercised all five
+  Phase-16 bullets. Results, raw timings, measurement rigs, logs, and a session
+  brief are in `tests/hardware/results/2026-06-16-phase18/` (start with
+  `SESSION_BRIEF.md`).
+
+  Two conformance-harness defects were found and fixed (the firmware was
+  conformant in both): the sketch's "oversized" telemetry frame was under the
+  8192-byte limit (`kLargePayloadBytes` 7600 → 8100) and the §28.5 runner
+  threshold was unsatisfiable on a clean board (`commands_ok >= 2` → `>= 1`).
+
+  Per operator decision, the **contract FREEZE itself is delegated to the final
+  agentic-audit task below**: the physical validation is now an operator-
+  completed, recorded fact, so the only remaining action is an evidence-backed,
+  independently-audited freeze. This resolves the hardware-validation half of
+  **D5**; the freeze (and FROZEN stamp) is the next and final task.
 
   ## Goal
 
@@ -2436,4 +2458,94 @@ existing states and edges.
 
   The standard four commands plus the recorded hardware conformance run
   (operator-run; never simulated).
+
+---
+
+* [ ] Task: Agentic audit of the Phase-18 validation, then stamp the contract
+  FROZEN (Phase 19 — final)
+
+  ## Goal
+
+  Independently audit the operator-completed Phase-18 hardware validation
+  (recorded under `tests/hardware/results/2026-06-16-phase18/`) and, **only if
+  the audit fully passes**, perform the V1 contract FREEZE. The physical
+  validation is already an operator-completed, recorded fact (previous task), so
+  this is an evidence-backed review plus the mechanical freeze edit — never a
+  hardware or physical-validation claim. This task is meant to be run by
+  `tools/agent_orchestrator/orchestrate.py`.
+
+  ## Operator authorization (scoped contract edit)
+
+  The operator (Justin) **allows editing contracts** for this task as a single
+  scoped exception to the "do not modify `docs/contracts/`" rule: the agent MAY
+  edit ONLY the contract Status header to FROZEN and regenerate the hash
+  manifest in the same commit. No other contract bytes may change — in
+  particular **no §31 numeric, no §13/§19 value, and no architecture**. If the
+  audit concludes any numeric SHOULD change, the agent MUST stop and report
+  instead of freezing (a numeric change is a separate operator decision and a
+  different edit per the previous task's "if a provisional numeric changes"
+  rule).
+
+  ## Contract sections
+
+  §13.6, §18, §19.1, §21, §31; §28/§29 (conformance); §10.3/§11.2 (line limits).
+
+  ## Required skills
+
+  `command-server-contract`, `host-conformance-testing`,
+  `repository-conventions`, `fixed-capacity-cpp`.
+
+  ## Audit scope (read first; verify, do not take on trust)
+
+  * Read `tests/hardware/results/2026-06-16-phase18/SESSION_BRIEF.md` and
+    `README.md` end to end, plus `numerics_raw.json`, `transmit_raw.json`,
+    `telemetry_streak_raw.json`, `conformance_suite.log`, `numerics_confirm.log`,
+    and the integration logs.
+  * Confirm the four §31 numerics were measured on real hardware and are
+    **realistic unchanged**: 100 ms e-stop hook budget, 100 ms controller-loss
+    hook budget, 100 ms transmit deadline, 10-frame telemetry teardown. Check
+    the recorded behaviour against the firmware logic (`src/core/OutboundWriter.h`,
+    `SessionDriver.h`, `EstopHandler.h`) and that steady-state operation showed
+    no false-fires (`tx_failures` / `telemetry_dropped` are 0 in normal runs).
+  * Independently verify the two harness fixes are CORRECT and that the firmware
+    was already conformant (not fitted to the code):
+    - `sketches/command_server_conformance`: `kLargePayloadBytes = 8100` makes
+      the oversized-telemetry frame exceed 8192 so §28.7 exercises the drop
+      path; the schema stays canonical (test-only command names, DHCP default,
+      no bench static IP, no leftover debug/serial code).
+    - `tests/conformance/runner.py`: §28.5 `commands_ok >= 1` is the
+      clean-board-correct threshold (get_counters snapshots before counting
+      itself); `commands_error >= 4` unchanged.
+  * Confirm the working tree holds only intended changes (no stray build
+    artifacts, no temporary serial-print code in the sketch, no `.toolchain/`).
+  * Run the standard four validation commands and confirm they pass.
+
+  ## Then — only if every audit check passes — FREEZE
+
+  * Edit `docs/contracts/Teensy_Command_Server_Contract.md`: change the title
+    `(v1 RATIFIED)` → `(v1 FROZEN)` and the Status header from RATIFIED FOR
+    IMPLEMENTATION to FROZEN (operator: Justin Sorrells, 2026-06-16), citing
+    `tests/hardware/results/2026-06-16-phase18/`. Change no numeric or normative
+    body text.
+  * Run `python3 tools/check_contract_sync.py --update` in the SAME change to
+    regenerate `docs/contracts/contracts.sha256` (otherwise the post-task
+    contract-sync check fails with STOP_CONTRACT_CHANGE).
+  * Check this task off (`* [x]`) with a one-line freeze record.
+
+  ## Do not
+
+  * change any §31 numeric, `src/support/Limits.h` value, or architecture;
+  * edit any contract bytes other than the title + Status header;
+  * touch `third_party/`, `AGENTS.md`, or `.agents/skills/`;
+  * claim or simulate any hardware result — rely on the recorded operator run;
+  * freeze if any audit check fails — make no changes, stop, and report.
+
+  ## Validation
+
+  ```bash
+  python3 tools/check_invariants.py
+  python3 tools/check_contract_sync.py   # passes after --update regenerates hashes
+  ./tools/run_host_tests.sh
+  ./tools/build_teensy.sh
+  ```
 

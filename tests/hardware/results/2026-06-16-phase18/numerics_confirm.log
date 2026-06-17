@@ -1,0 +1,12 @@
+== numeric 1: e-stop hook budget ==
+{"fast_ack_latency_ms": 0.28, "fast_ack_details": {"state": "safe"}, "fast_over_budget_counter_delta": 0, "overbudget_ack_latency_ms": 150.52, "overbudget_ack_details": {"state": "safe"}, "overbudget_counter_delta": 1, "estop_ack_sent_delta": 2}
+{"fast_ack_latency_ms": 0.44, "fast_ack_details": {"state": "safe"}, "fast_over_budget_counter_delta": 0, "overbudget_ack_latency_ms": 150.86, "overbudget_ack_details": {"state": "safe"}, "overbudget_counter_delta": 1, "estop_ack_sent_delta": 2}
+== numeric 2: controller-loss hook budget ==
+{"replacement_got_schema_first": true, "replacement_schema_latency_ms": 151.36, "loss_over_budget_counter_delta": 1, "sessions_superseded_delta": 1, "controller_disconnects_delta": 1}
+{"replacement_got_schema_first": true, "replacement_schema_latency_ms": 151.64, "loss_over_budget_counter_delta": 1, "sessions_superseded_delta": 1, "controller_disconnects_delta": 1}
+== numeric 3: transmit deadline (Critical) ==
+{"commands_sent_before_teardown": 1350, "teardown_signal": "send:BrokenPipeError", "teardown_latency_ms": 343.4, "tx_failures_delta": 1, "telemetry_dropped_delta": 0, "controller_disconnects_delta": 2}
+{"commands_sent_before_teardown": 1350, "teardown_signal": "send:BrokenPipeError", "teardown_latency_ms": 347.1, "tx_failures_delta": 1, "telemetry_dropped_delta": 0, "controller_disconnects_delta": 2}
+== numeric 4: telemetry teardown (10 consecutive) ==
+{"pinned_rcvbuf_bytes": 2048, "teardown_signal": "ECONNRESET", "teardown_latency_ms": 13182.8, "telemetry_dropped_delta": 13, "tx_failures_delta": 0, "controller_disconnects_delta": 2}
+{"pinned_rcvbuf_bytes": 2048, "teardown_signal": "ECONNRESET", "teardown_latency_ms": 13466.2, "telemetry_dropped_delta": 16, "tx_failures_delta": 0, "controller_disconnects_delta": 2}

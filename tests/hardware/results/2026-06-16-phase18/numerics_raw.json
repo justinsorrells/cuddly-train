@@ -1,0 +1,151 @@
+{
+  "host": "192.168.10.2",
+  "port": 5051,
+  "repeats": 3,
+  "constants": {
+    "over_budget_hook_delay_ms": 150,
+    "budget_ms": 100,
+    "teardown_failures": 10
+  },
+  "estop_hook_budget": [
+    {
+      "fast_ack_latency_ms": 0.42,
+      "fast_ack_details": {
+        "state": "safe"
+      },
+      "fast_over_budget_counter_delta": 0,
+      "overbudget_ack_latency_ms": 150.58,
+      "overbudget_ack_details": {
+        "state": "safe"
+      },
+      "overbudget_counter_delta": 1,
+      "estop_ack_sent_delta": 2
+    },
+    {
+      "fast_ack_latency_ms": 0.43,
+      "fast_ack_details": {
+        "state": "safe"
+      },
+      "fast_over_budget_counter_delta": 0,
+      "overbudget_ack_latency_ms": 150.9,
+      "overbudget_ack_details": {
+        "state": "safe"
+      },
+      "overbudget_counter_delta": 1,
+      "estop_ack_sent_delta": 2
+    },
+    {
+      "fast_ack_latency_ms": 0.4,
+      "fast_ack_details": {
+        "state": "safe"
+      },
+      "fast_over_budget_counter_delta": 0,
+      "overbudget_ack_latency_ms": 150.87,
+      "overbudget_ack_details": {
+        "state": "safe"
+      },
+      "overbudget_counter_delta": 1,
+      "estop_ack_sent_delta": 2
+    }
+  ],
+  "loss_hook_budget": [
+    {
+      "replacement_got_schema_first": true,
+      "replacement_schema_latency_ms": 151.43,
+      "loss_over_budget_counter_delta": 1,
+      "sessions_superseded_delta": 1,
+      "controller_disconnects_delta": 1
+    },
+    {
+      "replacement_got_schema_first": true,
+      "replacement_schema_latency_ms": 151.57,
+      "loss_over_budget_counter_delta": 1,
+      "sessions_superseded_delta": 1,
+      "controller_disconnects_delta": 1
+    },
+    {
+      "replacement_got_schema_first": true,
+      "replacement_schema_latency_ms": 151.41,
+      "loss_over_budget_counter_delta": 1,
+      "sessions_superseded_delta": 1,
+      "controller_disconnects_delta": 1
+    }
+  ],
+  "telemetry_teardown": [
+    {
+      "drain_schema_first": true,
+      "schema_drained": true,
+      "effective_rcvbuf_bytes": 35040,
+      "teardown_detected": false,
+      "teardown_latency_ms": null,
+      "teardown_signal": "timeout",
+      "telemetry_dropped_delta": 5,
+      "tx_failures_delta": 0,
+      "controller_disconnects_delta": 2
+    },
+    {
+      "drain_schema_first": true,
+      "schema_drained": true,
+      "effective_rcvbuf_bytes": 35040,
+      "teardown_detected": false,
+      "teardown_latency_ms": null,
+      "teardown_signal": "timeout",
+      "telemetry_dropped_delta": 5,
+      "tx_failures_delta": 0,
+      "controller_disconnects_delta": 2
+    },
+    {
+      "drain_schema_first": true,
+      "schema_drained": true,
+      "effective_rcvbuf_bytes": 35040,
+      "teardown_detected": false,
+      "teardown_latency_ms": null,
+      "teardown_signal": "timeout",
+      "telemetry_dropped_delta": 5,
+      "tx_failures_delta": 0,
+      "controller_disconnects_delta": 2
+    }
+  ],
+  "transmit_deadline_nodrain": [
+    {
+      "drain_schema_first": false,
+      "schema_drained": false,
+      "effective_rcvbuf_bytes": 35040,
+      "teardown_detected": false,
+      "teardown_latency_ms": null,
+      "teardown_signal": "timeout",
+      "telemetry_dropped_delta": 5,
+      "tx_failures_delta": 0,
+      "controller_disconnects_delta": 2
+    },
+    {
+      "drain_schema_first": false,
+      "schema_drained": false,
+      "effective_rcvbuf_bytes": 35040,
+      "teardown_detected": false,
+      "teardown_latency_ms": null,
+      "teardown_signal": "timeout",
+      "telemetry_dropped_delta": 6,
+      "tx_failures_delta": 0,
+      "controller_disconnects_delta": 2
+    },
+    {
+      "drain_schema_first": false,
+      "schema_drained": false,
+      "effective_rcvbuf_bytes": 35040,
+      "teardown_detected": false,
+      "teardown_latency_ms": null,
+      "teardown_signal": "timeout",
+      "telemetry_dropped_delta": 6,
+      "tx_failures_delta": 0,
+      "controller_disconnects_delta": 2
+    }
+  ],
+  "summary": {
+    "estop_overbudget_ack_latency_ms_median": 150.9,
+    "estop_fast_ack_latency_ms_median": 0.4,
+    "loss_replacement_schema_latency_ms_median": 151.4,
+    "teardown_latency_ms_median": null,
+    "telemetry_dropped_delta_median": 5
+  }
+}

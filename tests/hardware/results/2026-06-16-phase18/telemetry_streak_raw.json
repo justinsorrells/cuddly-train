@@ -1,0 +1,18 @@
+[
+  {
+    "pinned_rcvbuf_bytes": 2048,
+    "teardown_signal": "ECONNRESET",
+    "teardown_latency_ms": 13030.6,
+    "telemetry_dropped_delta": 13,
+    "tx_failures_delta": 0,
+    "controller_disconnects_delta": 2
+  },
+  {
+    "pinned_rcvbuf_bytes": 2048,
+    "teardown_signal": "ECONNRESET",
+    "teardown_latency_ms": 12965.8,
+    "telemetry_dropped_delta": 12,
+    "tx_failures_delta": 0,
+    "controller_disconnects_delta": 2
+  }
+]

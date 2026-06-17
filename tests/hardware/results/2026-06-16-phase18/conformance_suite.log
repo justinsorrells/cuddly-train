@@ -1,0 +1,61 @@
+PASS 28.2  schema-first and telemetry-start window - schema first in 0.001s; telemetry within 0.250s
+PASS 28.4  schema and registration metadata - schema first in 0.001s; telemetry within 0.250s
+PASS 28.5  command dispatch and error responses - valid, unknown, missing, wrong-type, extra-arg, and counters checks passed
+PASS 28.9  heartbeat acknowledgement - heartbeat seq/source/target echoed and counters moved
+PASS 28.8  software e-stop acknowledgement - estop_ack is truthful safe shape and telemetry continues
+PASS 28.8  e-stop hook failure withholds ack - failed hook withheld ack and telemetry resumed
+PASS 28.8  board-originated e-stop event - board-originated estop_triggered emitted with fixture reason
+PASS 28.3  framing oversized and malformed input - oversized discard-through-newline and malformed JSON counters moved
+PASS 28.5  wrong target ignored and counted - wrong target produced no response and invalid_targets moved
+PASS 28.2  session supersession - replacement connection got schema first and old session stopped
+PASS 28.7  telemetry sequence and oversized drop - telemetry monotonic seq and oversized telemetry drop counter checked
+SKIP 28.1  clean checkout builds - covered by build_teensy.sh, not the live TCP client
+SKIP 28.1  portable source and no generated paths - covered by check_invariants.py
+SKIP 28.1  QNEthernet version pin - document/build audit item, not a live board message
+SKIP 28.2  board starts safe before listening - requires firmware/local hardware observation
+SKIP 28.2  network/link loss variants - requires physical link manipulation or firmware rig
+SKIP 28.2  over-budget controller-loss hook still promotes - requires timed firmware hook run
+SKIP 28.2  estop as first inbound after reconnect - requires controller-latched e-stop reconnect sequence
+SKIP 28.3  fragmented command at every offset - requires byte-splitting proxy or transport fixture
+SKIP 28.3  multiple lines in one TCP read - TCP coalescing is not deterministic from this client
+SKIP 28.3  partial line at disconnect - requires disconnect timing/proxy rig
+SKIP 28.3  invalid UTF-8 - requires raw byte fixture; live JSON client sends UTF-8
+SKIP 28.4  duplicate command registration fails - startup-time fixture behavior, not reachable over TCP
+SKIP 28.5  board-specific range error - no range-limited conformance command exists in the sketch
+SKIP 28.5  handler-returned board_proc_us overwrite - requires a dedicated fixture command
+SKIP 28.5  long-running action starts and returns - requires hardware-specific command fixture
+SKIP 28.6  peer stops reading / transmit deadline - requires a non-reading TCP peer rig
+SKIP 28.6  partial QNEthernet write internals - requires instrumented transport or hardware trace
+SKIP 28.6  concurrent telemetry and response byte interleaving - requires transport capture/proxy rig
+SKIP 28.6  ten consecutive telemetry deadline failures - requires non-reading peer rig
+SKIP 28.6  telemetry coalesces while write pending - requires controlled write backpressure
+SKIP 28.7  50 ms timing qualification - recorded as hardware results in Phase 18
+SKIP 28.7  telemetry getter non-blocking - firmware implementation property, not wire-observable alone
+SKIP 28.7  missed periods do not burst stale frames - requires controlled telemetry delay fixture
+SKIP 28.8  repeated e-stop is safe - can be run manually with this client; not claimed without hardware
+SKIP 28.8  over-budget hook timing qualification - requires hardware timing run
+SKIP 28.8  wrong-target estop - covered by wrong-target dispatch shape only; hook non-invocation needs fixture observation
+SKIP 28.9  malformed heartbeat - requires raw malformed heartbeat variants; not run by default live suite
+SKIP 28.9  wrong-target heartbeat - same target validation mechanism as wrong-target command
+SKIP 28.10 steady-state heap growth - requires firmware memory instrumentation
+SKIP 28.10 no unbounded queue growth - requires long-duration/instrumented firmware run
+SKIP 28.10 no network calls from ISR - static/code-review property, not wire-observable
+SKIP 28.10 reconnect resource leaks - requires long-duration hardware run
+SKIP 28.10 bounded logging - requires firmware logging configuration audit
+
+section 29 acceptance summary
+29.1  PARTIAL builds portably
+29.2  PARTIAL exposes only registered commands
+29.3  PARTIAL schema and dispatch table cannot drift
+29.4  PARTIAL schema first on every connection
+29.5  PARTIAL frames and bounds NDJSON
+29.6  PARTIAL serialized bounded outbound writes
+29.7  PARTIAL partial reads and writes
+29.8  PARTIAL non-blocking command dispatch
+29.9  PARTIAL push telemetry without starving liveness
+29.10 PARTIAL honest software e-stop
+29.11 PARTIAL safe state on controller loss
+29.12 PARTIAL heartbeat acknowledgement
+29.13 PARTIAL no protocol networking from interrupts
+29.14 PARTIAL passes conformance tests
+29.15 PARTIAL no conflict with frozen V1 contract

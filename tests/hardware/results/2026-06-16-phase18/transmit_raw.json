@@ -1,0 +1,53 @@
+{
+  "host": "192.168.10.2",
+  "port": 5051,
+  "numeric3_critical": [
+    {
+      "commands_sent_before_teardown": 1300,
+      "teardown_signal": "send:BrokenPipeError",
+      "teardown_latency_ms": 339.6,
+      "tx_failures_delta": 1,
+      "telemetry_dropped_delta": 0,
+      "controller_disconnects_delta": 2
+    },
+    {
+      "commands_sent_before_teardown": 1350,
+      "teardown_signal": "send:BrokenPipeError",
+      "teardown_latency_ms": 346.0,
+      "tx_failures_delta": 1,
+      "telemetry_dropped_delta": 0,
+      "controller_disconnects_delta": 2
+    },
+    {
+      "commands_sent_before_teardown": 1300,
+      "teardown_signal": "send:BrokenPipeError",
+      "teardown_latency_ms": 342.5,
+      "tx_failures_delta": 1,
+      "telemetry_dropped_delta": 0,
+      "controller_disconnects_delta": 2
+    }
+  ],
+  "numeric4_telemetry": [
+    {
+      "teardown_signal": null,
+      "teardown_latency_ms": null,
+      "telemetry_dropped_delta": 0,
+      "tx_failures_delta": 0,
+      "controller_disconnects_delta": 2
+    },
+    {
+      "teardown_signal": null,
+      "teardown_latency_ms": null,
+      "telemetry_dropped_delta": 0,
+      "tx_failures_delta": 0,
+      "controller_disconnects_delta": 2
+    },
+    {
+      "teardown_signal": null,
+      "teardown_latency_ms": null,
+      "telemetry_dropped_delta": 0,
+      "tx_failures_delta": 0,
+      "controller_disconnects_delta": 2
+    }
+  ]
+}

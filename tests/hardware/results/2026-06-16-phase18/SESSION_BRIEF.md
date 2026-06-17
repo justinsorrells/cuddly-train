@@ -148,9 +148,12 @@ window on real hardware.
   the audit PASSES and the fresh e2e re-test is green.
 - **`/demo` command** — requested; proposed design in §7, not yet built.
 
-## 7. Proposed `/demo` command (pending operator go-ahead)
+## 7. `/demo` command (built)
 
-A reusable "encantation" to bring the whole demo up for boards on the network:
+Implemented: `tools/demo_stack.py` + `.claude/commands/demo.md`. A reusable
+"encantation" to bring the whole demo up for boards on the network: discover →
+controller + dashboard, with `up` / `down` / `status` / `discover` subcommands.
+Design:
 
 - `tools/demo_stack.py` orchestrator with subcommands `up` / `down` / `status` /
   `discover`:

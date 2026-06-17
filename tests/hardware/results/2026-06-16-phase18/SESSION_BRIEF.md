@@ -139,9 +139,13 @@ window on real hardware.
 ## 6. NOT done (deliberately deferred)
 
 - **Contract FREEZE** — no contract bytes were changed this session. The freeze
-  is delegated to the final backlog task: an `orchestrate.py`-run agent audits
-  this recorded evidence and, only if it fully passes, stamps the Status line
-  FROZEN and regenerates the hash manifest.
+  is gated behind two final backlog tasks: **Phase 19** is a harsh, independent
+  `orchestrate.py`-run agentic audit of this entire body of work (this brief is
+  the audit input — treated as claims to disprove); **Phase 20** then requires a
+  FRESH operator-run end-to-end re-test on real hardware (conformance + §31 rigs
+  + integration demo, recorded under `retest/`) and only then stamps the Status
+  line FROZEN and regenerates the hash manifest. The freeze happens only if both
+  the audit PASSES and the fresh e2e re-test is green.
 - **`/demo` command** — requested; proposed design in §7, not yet built.
 
 ## 7. Proposed `/demo` command (pending operator go-ahead)

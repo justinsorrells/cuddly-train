@@ -2461,84 +2461,145 @@ existing states and edges.
 
 ---
 
-* [ ] Task: Agentic audit of the Phase-18 validation, then stamp the contract
-  FROZEN (Phase 19 — final)
+* [ ] Task: Harsh agentic audit of the entire Phase-18 body of work (Phase 19)
 
   ## Goal
 
-  Independently audit the operator-completed Phase-18 hardware validation
-  (recorded under `tests/hardware/results/2026-06-16-phase18/`) and, **only if
-  the audit fully passes**, perform the V1 contract FREEZE. The physical
-  validation is already an operator-completed, recorded fact (previous task), so
-  this is an evidence-backed review plus the mechanical freeze edit — never a
-  hardware or physical-validation claim. This task is meant to be run by
-  `tools/agent_orchestrator/orchestrate.py`.
+  An independent, adversarial, host-side audit of the COMPLETE Phase-18 body of
+  work by a fresh agent that did not do the original work. The written brief of
+  that work is `tests/hardware/results/2026-06-16-phase18/SESSION_BRIEF.md` —
+  treat it as a set of CLAIMS to be disproved, not facts to be trusted. This
+  task makes NO contract change and performs NO freeze; it produces a written
+  audit verdict. Run via `tools/agent_orchestrator/orchestrate.py`.
 
-  ## Operator authorization (scoped contract edit)
+  ## Mindset
 
-  The operator (Justin) **allows editing contracts** for this task as a single
-  scoped exception to the "do not modify `docs/contracts/`" rule: the agent MAY
-  edit ONLY the contract Status header to FROZEN and regenerate the hash
-  manifest in the same commit. No other contract bytes may change — in
-  particular **no §31 numeric, no §13/§19 value, and no architecture**. If the
-  audit concludes any numeric SHOULD change, the agent MUST stop and report
-  instead of freezing (a numeric change is a separate operator decision and a
-  different edit per the previous task's "if a provisional numeric changes"
-  rule).
+  Audit harshly. Assume the brief, the two harness fixes, and the measurement
+  rigs may be wrong, incomplete, or self-serving. Re-derive every conclusion
+  from the artifacts and the source. Prefer finding a real problem over
+  rubber-stamping; any claim you cannot independently verify is a finding.
 
   ## Contract sections
 
-  §13.6, §18, §19.1, §21, §31; §28/§29 (conformance); §10.3/§11.2 (line limits).
+  §10.3/§11.2, §13.6, §16, §18, §19.1, §21, §25, §28/§29, §31.
 
   ## Required skills
 
   `command-server-contract`, `host-conformance-testing`,
-  `repository-conventions`, `fixed-capacity-cpp`.
+  `repository-conventions`, `fixed-capacity-cpp`, `ndjson-framing`.
 
-  ## Audit scope (read first; verify, do not take on trust)
+  ## Audit scope (verify independently; do not take on trust)
 
-  * Read `tests/hardware/results/2026-06-16-phase18/SESSION_BRIEF.md` and
-    `README.md` end to end, plus `numerics_raw.json`, `transmit_raw.json`,
+  * Read `SESSION_BRIEF.md`, `README.md`, and every artifact in the Phase-18
+    results dir (`numerics_raw.json`, `transmit_raw.json`,
     `telemetry_streak_raw.json`, `conformance_suite.log`, `numerics_confirm.log`,
-    and the integration logs.
-  * Confirm the four §31 numerics were measured on real hardware and are
-    **realistic unchanged**: 100 ms e-stop hook budget, 100 ms controller-loss
-    hook budget, 100 ms transmit deadline, 10-frame telemetry teardown. Check
-    the recorded behaviour against the firmware logic (`src/core/OutboundWriter.h`,
-    `SessionDriver.h`, `EstopHandler.h`) and that steady-state operation showed
-    no false-fires (`tx_failures` / `telemetry_dropped` are 0 in normal runs).
-  * Independently verify the two harness fixes are CORRECT and that the firmware
-    was already conformant (not fitted to the code):
-    - `sketches/command_server_conformance`: `kLargePayloadBytes = 8100` makes
-      the oversized-telemetry frame exceed 8192 so §28.7 exercises the drop
-      path; the schema stays canonical (test-only command names, DHCP default,
-      no bench static IP, no leftover debug/serial code).
-    - `tests/conformance/runner.py`: §28.5 `commands_ok >= 1` is the
-      clean-board-correct threshold (get_counters snapshots before counting
-      itself); `commands_error >= 4` unchanged.
-  * Confirm the working tree holds only intended changes (no stray build
-    artifacts, no temporary serial-print code in the sketch, no `.toolchain/`).
-  * Run the standard four validation commands and confirm they pass.
+    `integration_*.log`) plus the rigs (`measure_numerics.py`,
+    `measure_transmit.py`). Judge whether the rigs actually measure what they
+    claim: RST/`ECONNRESET` teardown detection without draining the socket;
+    `SO_RCVBUF` pinning vs macOS receive autotuning; the Critical-vs-telemetry
+    teardown distinction; and whether the reported latencies isolate the
+    intended quantity.
+  * Re-read the git diff of the Phase-18 commit. Independently confirm the two
+    harness fixes are correct AND that the firmware was already conformant — not
+    that the tests were fitted to the firmware:
+    - sketch `kLargePayloadBytes = 8100`: confirm the oversized telemetry frame
+      now exceeds 8192 (§10.3/§11.2) so §28.7 truly exercises the drop path, and
+      that `test_oversized_result` and the canonical schema are unaffected
+      (test-only names, DHCP default, no static IP, no debug/serial residue).
+    - runner §28.5 `commands_ok >= 1`: confirm this is the clean-board-correct
+      expectation given `get_counters` snapshots before counting itself
+      (cross-check the counter-increment order in the dispatch path), and that
+      `commands_error >= 4` still holds.
+  * Confirm the four §31 numerics are genuinely supported by the data and
+    consistent with the firmware logic (`src/core/OutboundWriter.h`,
+    `SessionDriver.h`, `EstopHandler.h`, and the `src/support/Limits.h`
+    constants): 100 ms e-stop and controller-loss hook budgets, 100 ms transmit
+    deadline, 10-frame telemetry teardown. Confirm no normal-operation
+    false-fires and that NO numeric needs to change. If any numeric is
+    unsupported by the evidence or should change, that is a blocking finding (a
+    numeric change is a separate operator action, not part of the freeze).
+  * Confirm no firmware/contract regression: `src/`, `docs/contracts/`, and
+    `third_party/` are untouched by Phase-18; the working tree holds only
+    intended changes; no stray build artifacts.
+  * Re-run the standard four validation commands.
 
-  ## Then — only if every audit check passes — FREEZE
+  ## Output
 
-  * Edit `docs/contracts/Teensy_Command_Server_Contract.md`: change the title
-    `(v1 RATIFIED)` → `(v1 FROZEN)` and the Status header from RATIFIED FOR
-    IMPLEMENTATION to FROZEN (operator: Justin Sorrells, 2026-06-16), citing
-    `tests/hardware/results/2026-06-16-phase18/`. Change no numeric or normative
-    body text.
-  * Run `python3 tools/check_contract_sync.py --update` in the SAME change to
-    regenerate `docs/contracts/contracts.sha256` (otherwise the post-task
-    contract-sync check fails with STOP_CONTRACT_CHANGE).
-  * Check this task off (`* [x]`) with a one-line freeze record.
+  Write the audit verdict to
+  `tests/hardware/results/2026-06-16-phase18/AUDIT_PHASE19.md`: PASS or FAIL,
+  each check with its evidence, and every finding. On PASS, check this task off.
+  On FAIL, leave it unchecked, record the findings, and stop — do not advance to
+  the freeze task.
 
   ## Do not
 
+  * edit `docs/contracts/`, `src/`, `third_party/`, `AGENTS.md`, `.agents/skills/`;
+  * change any §31 numeric or `src/support/Limits.h` value;
+  * claim or simulate any hardware result;
+  * freeze anything — that is the next task, and only after a fresh e2e re-test.
+
+  ## Validation
+
+  ```bash
+  python3 tools/check_invariants.py
+  python3 tools/check_contract_sync.py
+  ./tools/run_host_tests.sh
+  ./tools/build_teensy.sh
+  ```
+
+---
+
+* [ ] Task: End-to-end re-test, then stamp the contract FROZEN (Phase 20 — final)
+
+  ## Goal
+
+  Only after the Phase-19 harsh audit PASSES: re-run end-to-end testing on real
+  hardware from scratch and — if it is green — perform the V1 contract FREEZE.
+  This task **allows editing contracts** for the single scoped freeze edit only.
+
+  ## Precondition (the agent MUST verify, not assume)
+
+  * `tests/hardware/results/2026-06-16-phase18/AUDIT_PHASE19.md` exists with a
+    PASS verdict and Phase 19 is checked off. If not, stop.
+  * A FRESH end-to-end re-test record exists and is green (see below). The agent
+    NEVER fabricates or simulates this; it is operator-produced on real
+    hardware. If absent, stop and report "blocked on operator e2e re-test".
+
+  ## End-to-end re-test (operator-run on real hardware; agents must not claim it)
+
+  Re-flash the committed `command_server_conformance` on the pinned toolchain
+  (arduino-cli 1.3.1, teensy:avr 1.59.0) and re-run from a clean boot, recording
+  under `tests/hardware/results/2026-06-16-phase18/retest/`:
+  * the Phase-17 conformance suite (`tools/run_conformance.sh <board:port>`) —
+    expect 11/11 live cases PASS, 0 FAIL;
+  * the four §31 numeric rigs (`measure_numerics.py` + `measure_transmit.py`) —
+    expect the same confirmations, no numeric change;
+  * the real-controller integration demo incl. the web dashboard — all five
+    Phase-16 bullets.
+  Record toolchain versions, board/firmware/controller commits, raw output, and
+  pass/fail. This is the "end-to-end testing again" gate before the freeze.
+
+  ## Then — only if the audit PASSED and the fresh e2e re-test is green — FREEZE
+
+  * Edit `docs/contracts/Teensy_Command_Server_Contract.md`: change the title
+    `(v1 RATIFIED)` → `(v1 FROZEN)` and the Status header from RATIFIED FOR
+    IMPLEMENTATION to FROZEN (operator: Justin Sorrells), citing the Phase-18
+    results dir and the `retest/` record. Change no numeric or normative body
+    text.
+  * Run `python3 tools/check_contract_sync.py --update` in the SAME change to
+    regenerate `docs/contracts/contracts.sha256` (else the post-task
+    contract-sync check fails with STOP_CONTRACT_CHANGE).
+  * Check this task off (`* [x]`) with a one-line freeze record citing the audit
+    and the e2e re-test.
+
+  ## Do not
+
+  * freeze if the Phase-19 audit did not PASS or the fresh e2e re-test is missing
+    or not green — make no changes, stop, and report;
   * change any §31 numeric, `src/support/Limits.h` value, or architecture;
   * edit any contract bytes other than the title + Status header;
   * touch `third_party/`, `AGENTS.md`, or `.agents/skills/`;
-  * claim or simulate any hardware result — rely on the recorded operator run;
-  * freeze if any audit check fails — make no changes, stop, and report.
+  * claim or simulate any hardware result.
 
   ## Validation
 

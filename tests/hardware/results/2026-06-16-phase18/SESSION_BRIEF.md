@@ -118,6 +118,35 @@ Dashboard telemetry **jitter** (`|interval − previous_interval|`, nominal 50 m
 cadence is rock-steady, corroborating the §18 50 ms cadence and 0.25 s liveness
 window on real hardware.
 
+### 4.5 Telemetry test modes 1 and 2 fault the board against the live controller (by design)
+
+Observed live: `test_telemetry_mode` with **mode 1 (Oversized)** or **mode 2
+(ProviderFailure)** drives the board to `FAULTED` on the controller; any other
+value (0, or out-of-range like 3+) is fine. This is **working as designed, not a
+firmware bug** — auditor note:
+
+- Both modes **stop telemetry**: mode 2 makes `writeTelemetry` return false
+  (nothing sent); mode 1's frame is now ~8280 B > 8192 after the Phase-18
+  `kLargePayloadBytes` 7600 → 8100 fix, so the board **drops** it (nothing sent).
+- Telemetry is the liveness signal. With telemetry stopped, the controller's
+  liveness watchdog (`special-lamp/board_connection.py:_fault_if_liveness_expired`,
+  `DEFAULT_BOARD_LIVENESS_TIMEOUT_S = 0.25 s`) calls `board_down` →
+  `BoardConnState.FAULTED`. Any valid inbound frame (telemetry/response/event/
+  heartbeat) refreshes the window (`_record_valid_inbound`), which is why
+  out-of-range modes (a clean `INVALID_ARGUMENT` response, no telemetry change)
+  do **not** fault.
+- **mode > 2 does not fault** on its own — it returns `INVALID_ARGUMENT` and
+  changes no state. A fault seen near a `>2` value means the board was already
+  parked in mode 1/2.
+- Footgun: `telemetry_mode` is fixture state that **persists across the
+  controller's reconnect**, so a board left in mode 1/2 fault-reconnects in a
+  loop until `mode=0` is sent (or the board is reset/reflashed).
+- The Phase-17 conformance runner is unaffected (it reads telemetry directly and
+  does not enforce the 0.25 s liveness watchdog), so §28.7 still passes; this is
+  purely a fixture-vs-live-liveness interaction. The only behaviour change from
+  Phase-18 is that mode 1 (oversized) is now liveness-stalling in the live
+  controller path, where pre-fix it was not.
+
 ## 5. Changes this session
 
 **Keepers (to be committed):**

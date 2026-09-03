@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <TeensyCommandServer.h>
 #include <platform/qnethernet/Platform.h>
+#include <QNEthernet.h>
 
 #include <cstdint>
 #include <cstring>
@@ -219,8 +220,16 @@ void registerCommands() {
 }
 
 void setup() {
+    Serial.begin(9600);
     fillLargePayload();
-
+    Serial.println("beginning");
+    qindesign::network::Ethernet.onAddressChanged([]() {
+      const IPAddress ip = qindesign::network::Ethernet.localIP();
+      if (ip == INADDR_NONE) {
+        return ;
+      }
+      Serial.printf("IP address: %u.%u.%u.%u\r\n", ip[0], ip[1], ip[2], ip[3]);
+        });
     (void)server.setIdentity({"command_server_conformance", "1", "0.1.0"});
     (void)server.setNetworkConfig(network_config);
     registerCommands();

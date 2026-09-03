@@ -34,13 +34,17 @@ arduino-cli lib install "ArduinoJson@6.21.5"
 From the repository root:
 
 ```bash
-./tools/build_teensy.sh
+./tools/build_teensy.sh                             # compile all sketches (CI)
+./tools/build_teensy.sh command_server_conformance # compile one named sketch
 ```
 
-The script compiles every valid sketch under `sketches/<name>/<name>.ino` for
-`teensy:avr:teensy41` and creates a temporary Arduino library wrapper that
-points at `src/`. It also validates sketch layout before invoking
-`arduino-cli`.
+By default, the script compiles every valid sketch under
+`sketches/<name>/<name>.ino` for `teensy:avr:teensy41` and creates a temporary
+Arduino library wrapper that points at `src/`. Pass a sketch's directory name
+to compile only that sketch; omit the name to compile all sketches and hardware
+compile fixtures. It also validates sketch layout before invoking
+`arduino-cli`. The script performs compile validation only; it does not upload
+firmware to a board.
 
 ## Sketches
 

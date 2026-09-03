@@ -1,10 +1,39 @@
 #!/usr/bin/env bash
-# Compile every sketch under sketches/ for Teensy 4.1 with arduino-cli.
+# Compile one named sketch, or every sketch, for Teensy 4.1 with arduino-cli.
 # Exits 0 with a notice while no sketches exist (bootstrap state).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 FQBN="teensy:avr:teensy41"
+
+usage() {
+    echo "usage: ./tools/build_teensy.sh [sketch-name]"
+}
+
+requested_sketch=""
+case "$#" in
+    0)
+        ;;
+    1)
+        case "$1" in
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            -*|*/*|"")
+                usage >&2
+                exit 2
+                ;;
+            *)
+                requested_sketch="$1"
+                ;;
+        esac
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac
 
 # Classify every .ino under sketches/ at any depth BEFORE the toolchain
 # check, so layout errors are loud and toolchain-independent. Valid layout is
@@ -31,9 +60,29 @@ if [[ "$invalid" -gt 0 ]]; then
     exit 1
 fi
 
-if [[ ${#valid_dirs[@]} -eq 0 ]]; then
+if [[ ${#valid_dirs[@]} -eq 0 && -z "$requested_sketch" ]]; then
     echo "build_teensy: no sketches or compile fixtures yet (bootstrap state) — nothing to build"
     exit 0
+fi
+
+if [[ -n "$requested_sketch" ]]; then
+    matching_dirs=()
+    for sketch_dir in "${valid_dirs[@]}"; do
+        if [[ "$(basename "$sketch_dir")" == "$requested_sketch" ]]; then
+            matching_dirs+=("$sketch_dir")
+        fi
+    done
+
+    if [[ ${#matching_dirs[@]} -eq 0 ]]; then
+        echo "build_teensy: no sketch or compile fixture named '$requested_sketch'" >&2
+        exit 1
+    fi
+    if [[ ${#matching_dirs[@]} -gt 1 ]]; then
+        echo "build_teensy: sketch name '$requested_sketch' is ambiguous:" >&2
+        printf '  %s\n' "${matching_dirs[@]}" >&2
+        exit 1
+    fi
+    valid_dirs=("${matching_dirs[0]}")
 fi
 
 if ! command -v arduino-cli >/dev/null 2>&1; then
@@ -73,4 +122,8 @@ for sketch_dir in "${valid_dirs[@]}"; do
 done
 
 [[ "$failures" -eq 0 ]] || { echo "build_teensy: $failures sketch(es) failed"; exit 1; }
-echo "build_teensy: all sketches compiled"
+if [[ -n "$requested_sketch" ]]; then
+    echo "build_teensy: $requested_sketch compiled"
+else
+    echo "build_teensy: all sketches compiled"
+fi
